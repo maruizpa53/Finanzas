@@ -9,7 +9,7 @@ export const metadata = { title: "Registrar · Mis Finanzas" };
 export default async function NuevoMovimientoPage({
   searchParams,
 }: {
-  searchParams: Promise<{ recurrente?: string; tipo?: string }>;
+  searchParams: Promise<{ recurrente?: string; tipo?: string; proyecto?: string }>;
 }) {
   const [datos, prefs, sp] = await Promise.all([cargarDatos(3), cargarPreferencias(), searchParams]);
   let prefill: PrefillRegistro | undefined;
@@ -24,6 +24,8 @@ export default async function NuevoMovimientoPage({
     };
   } else if (sp.tipo === "pago_tarjeta" || sp.tipo === "transferencia" || sp.tipo === "ingreso") {
     prefill = { tipo: sp.tipo };
+  } else if (sp.proyecto && datos.proyectos.some((p) => p.id === sp.proyecto)) {
+    prefill = { proyectoId: sp.proyecto };
   }
 
   return (
@@ -37,6 +39,12 @@ export default async function NuevoMovimientoPage({
         bolsaDefault={prefs.bolsaDefault}
         hoy={datos.hoy}
         prefill={prefill}
+        etiquetas={datos.etiquetas}
+        proyectos={datos.proyectos}
+        deudas={datos.deudas}
+        ahorros={datos.ahorros}
+        tagsDefault={prefs.tagsDefault}
+        reparto={prefs.reparto}
       />
     </>
   );

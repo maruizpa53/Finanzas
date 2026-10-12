@@ -55,7 +55,7 @@ export function GraficoAcumulado({ datos, alto = 180 }: { datos: Punto[]; alto?:
                 ) : null
               }
             />
-            <Line type="monotone" dataKey="mesAnterior" stroke="var(--color-muted-foreground)" strokeWidth={1.5} strokeDasharray="4 4" dot={false} isAnimationActive={false} />
+            <Line type="monotone" dataKey="mesAnterior" stroke="var(--color-muted-foreground)" strokeWidth={1.5} strokeDasharray="4 4" dot={false} animationDuration={900} animationEasing="ease-out" />
             <Area
               type="monotone"
               dataKey="esteMes"
@@ -65,7 +65,7 @@ export function GraficoAcumulado({ datos, alto = 180 }: { datos: Punto[]; alto?:
               dot={false}
               activeDot={{ r: 4, strokeWidth: 2, stroke: "var(--color-card)" }}
               connectNulls={false}
-              isAnimationActive={false}
+              animationDuration={900} animationEasing="ease-out"
             />
           </AreaChart>
         </ResponsiveContainer>

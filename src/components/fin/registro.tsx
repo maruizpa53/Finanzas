@@ -10,7 +10,10 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { formatCOP } from "@/lib/format";
 import { crearMovimiento, eliminarMovimiento } from "@/lib/acciones/movimientos";
-import type { Beneficiario, Bolsa, Categoria, Cuenta, TipoMovimiento } from "@/lib/finance/modelo";
+import { crearIngresoRepartido, eliminarGrupo } from "@/lib/acciones/reparto";
+import type { Ahorro, Beneficiario, Bolsa, Categoria, Cuenta, Deuda, Etiqueta, Proyecto, TipoMovimiento } from "@/lib/finance/modelo";
+import type { LineaReparto } from "@/lib/finance/reparto";
+import { EditorReparto, SelectorEtiquetas, ToggleProyecto } from "./registro-extras";
 import { BENEFICIARIOS, nombreCuenta } from "@/lib/finance/etiquetas";
 
 export interface PrefillRegistro {
@@ -20,6 +23,7 @@ export interface PrefillRegistro {
   recurrenteId?: string;
   tipo?: TipoMovimiento;
   bolsa?: Bolsa;
+  proyectoId?: string;
 }
 
 const TIPOS: { valor: TipoMovimiento; nombre: string }[] = [
@@ -43,6 +47,12 @@ export function RegistroRapido({
   bolsaDefault,
   hoy,
   prefill,
+  etiquetas = [],
+  proyectos = [],
+  deudas = [],
+  ahorros = [],
+  tagsDefault = [],
+  reparto = [],
 }: {
   cuentas: Cuenta[];
   categorias: Categoria[];
@@ -51,6 +61,12 @@ export function RegistroRapido({
   bolsaDefault: Bolsa;
   hoy: string;
   prefill?: PrefillRegistro;
+  etiquetas?: Etiqueta[];
+  proyectos?: Proyecto[];
+  deudas?: Deuda[];
+  ahorros?: Ahorro[];
+  tagsDefault?: string[];
+  reparto?: LineaReparto[];
 }) {
   const router = useRouter();
   const [pendiente, iniciar] = useTransition();
@@ -67,6 +83,15 @@ export function RegistroRapido({
   const [notas, setNotas] = useState("");
   const [verTodas, setVerTodas] = useState(false);
   const [verDetalles, setVerDetalles] = useState(false);
+  const proyectosActivos = proyectos.filter((p) => p.activo && p.tag_id);
+  const tagsProyecto = new Set(proyectosActivos.map((p) => p.tag_id));
+  const etiquetasLibres = etiquetas.filter((e) => e.activa && !tagsProyecto.has(e.id));
+  const [tags, setTags] = useState<string[]>(tagsDefault.filter((t) => etiquetasLibres.some((e) => e.id === t)));
+  const [proyectoId, setProyectoId] = useState<string | null>(prefill?.proyectoId ?? null);
+  const [montoExt, setMontoExt] = useState("");
+  const [lineas, setLineas] = useState<LineaReparto[]>(reparto);
+  const [verReparto, setVerReparto] = useState(false);
+  const [recordar, setRecordar] = useState(true);
 
   const monto = Number(digitos || 0);
   const entreCuentas = tipo === "transferencia" || tipo === "pago_tarjeta";
@@ -93,12 +118,51 @@ export function RegistroRapido({
     setDigitos((d) => (d + t).replace(/^0+/, "").slice(0, 12));
   }
 
+  const proyecto = proyectosActivos.find((p) => p.id === proyectoId);
+  const repartiendo = tipo === "ingreso" && verReparto && lineas.some((l) => l.valor > 0);
+
+  function deshacer(id: string | undefined, grupo: boolean) {
+    if (!id) return undefined;
+    return {
+      label: "Deshacer",
+      onClick: async () => {
+        const d = grupo ? await eliminarGrupo(id) : await eliminarMovimiento(id);
+        toast(d.ok ? (d.mensaje ?? "Eliminado") : d.error);
+      },
+    };
+  }
+
   function guardar() {
     if (!monto) return toast.error("Escriba el monto");
     if (!entreCuentas && !categoriaId) return toast.error("Elija una categoría");
     if (entreCuentas && !destinoId) return toast.error("Elija la cuenta de destino");
     iniciar(async () => {
+      if (repartiendo && categoriaId) {
+        const r = await crearIngresoRepartido({
+          monto,
+          fecha,
+          cuenta_id: cuentaId,
+          categoria_id: categoriaId,
+          bolsa,
+          descripcion: descripcion || undefined,
+          notas: notas || null,
+          lineas: lineas.filter((l) => l.valor > 0),
+          guardar_plantilla: recordar,
+        });
+        if (!r.ok) {
+          toast.error(r.error);
+          return;
+        }
+        toast.success(`${r.mensaje} · ${formatCOP(monto)}`, { action: deshacer(r.id, true), duration: 8000 });
+        router.push("/");
+        router.refresh();
+        return;
+      }
+      const ext = Number(montoExt) || 0;
       const r = await crearMovimiento({
+        etiquetas: entreCuentas ? [] : [...tags, ...(proyecto?.tag_id ? [proyecto.tag_id] : [])],
+        moneda_original: proyecto?.moneda && proyecto.moneda !== "COP" && ext ? proyecto.moneda : null,
+        monto_original: proyecto?.moneda && proyecto.moneda !== "COP" && ext ? ext : null,
         monto,
         tipo,
         fecha,
@@ -115,17 +179,8 @@ export function RegistroRapido({
         toast.error(r.error);
         return;
       }
-      const id = r.id;
-      toast.success(`${r.mensaje ?? "Guardado"} · ${formatCOP(monto)}`, {
-        action: id
-          ? {
-              label: "Deshacer",
-              onClick: async () => {
-                const d = await eliminarMovimiento(id);
-                toast(d.ok ? "Movimiento eliminado" : d.error);
-              },
-            }
-          : undefined,
+      toast.success(`${r.mensaje ?? "Guardado"}${proyecto ? ` en ${proyecto.emoji ?? ""} ${proyecto.nombre}` : ""} · ${formatCOP(monto)}`, {
+        action: deshacer(r.id, false),
         duration: 8000,
       });
       router.push("/");
@@ -285,6 +340,56 @@ export function RegistroRapido({
         </div>
       )}
 
+      {/* Viaje / proyecto */}
+      {tipo === "gasto" &&
+        proyectosActivos.map((p) => (
+          <ToggleProyecto
+            key={p.id}
+            proyecto={p}
+            activo={proyectoId === p.id}
+            onToggle={() => setProyectoId((x) => (x === p.id ? null : p.id))}
+            montoExtranjero={montoExt}
+            onMontoExtranjero={setMontoExt}
+            onCalcularPesos={(v) => setDigitos(String(v))}
+          />
+        ))}
+
+      {/* Etiquetas */}
+      {!entreCuentas && <SelectorEtiquetas etiquetas={etiquetasLibres} valor={tags} onChange={setTags} />}
+
+      {/* Reparto del ingreso */}
+      {tipo === "ingreso" &&
+        (verReparto ? (
+          <EditorReparto
+            ingreso={monto}
+            cuentaOrigen={activas.find((c) => c.id === cuentaId)}
+            lineas={lineas}
+            onChange={setLineas}
+            cuentas={cuentas}
+            deudas={deudas}
+            ahorros={ahorros}
+            recordar={recordar}
+            onRecordar={setRecordar}
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              setVerReparto(true);
+              if (!lineas.length) setLineas([{ destino: "cuenta", id: null, modo: "monto", valor: 0 }]);
+            }}
+            className="bg-positive-soft text-positive flex items-center justify-between rounded-2xl px-4 py-3 text-left text-sm font-medium"
+          >
+            <span>
+              🧩 Repartir este ingreso
+              <span className="block text-xs font-normal opacity-80">
+                {reparto.length ? `Usar su reparto guardado (${reparto.length} partes)` : "Mandar partes a Nequi, a una deuda, al ahorro o prestar"}
+              </span>
+            </span>
+            <ChevronDown className="size-4 -rotate-90" />
+          </button>
+        ))}
+
       {/* Detalles */}
       <button type="button" onClick={() => setVerDetalles((v) => !v)} className="text-primary flex items-center gap-1 text-xs font-medium">
         Fecha, descripción y más
@@ -328,7 +433,7 @@ export function RegistroRapido({
       )}
 
       <Button size="lg" className="h-12 text-base" onClick={guardar} disabled={pendiente}>
-        {pendiente ? "Guardando…" : `Guardar ${monto ? formatCOP(monto) : ""}`}
+        {pendiente ? "Guardando…" : repartiendo ? `Guardar y repartir ${formatCOP(monto)}` : `Guardar ${monto ? formatCOP(monto) : ""}`}
       </Button>
     </div>
   );

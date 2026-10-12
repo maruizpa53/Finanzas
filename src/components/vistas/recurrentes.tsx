@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { Check, CircleDashed } from "lucide-react";
+import { CalendarPlus, Check, CircleDashed } from "lucide-react";
+import { enlaceGoogleCalendar } from "@/lib/finance/ics";
 import { Button } from "@/components/ui/button";
 import { Encabezado } from "@/components/app/encabezado";
 import { Monto } from "@/components/app/monto";
 import { EditorRecurrente } from "@/components/fin/editor-recurrente";
 import { EmojiCategoria, Kpi, Tarjeta, TituloTarjeta } from "@/components/fin/piezas";
-import { formatFecha, nombreMes } from "@/lib/format";
+import { formatCOP, formatFecha, nombreMes } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { diasDelMes } from "@/lib/finance/dias-habiles";
 import type { Datos } from "@/lib/finance/modelo";
@@ -47,7 +48,7 @@ export function VistaRecurrentes({ datos }: { datos: Datos }) {
         <Kpi titulo="Falta" valor={<Monto valor={total - pagado} />} detalle={`${faltan.length} pagos`} />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-5">
+      <div className="escalonado grid gap-6 lg:grid-cols-5">
         <Tarjeta className="lg:col-span-2 lg:self-start">
           <TituloTarjeta>Calendario</TituloTarjeta>
           <div className="text-muted-foreground mb-1 grid grid-cols-7 gap-1 text-center text-[10px] font-medium">
@@ -78,6 +79,10 @@ export function VistaRecurrentes({ datos }: { datos: Datos }) {
               );
             })}
           </div>
+          <Link href="/ajustes" className="bg-accent text-accent-foreground mt-4 flex items-center gap-2 rounded-xl p-3 text-xs font-medium">
+            <CalendarPlus className="size-4 shrink-0" />
+            Ver todos estos pagos en Google Calendar (se actualiza solo)
+          </Link>
           <p className="text-muted-foreground mt-3 flex items-center gap-3 text-xs">
             <span className="flex items-center gap-1">
               <span className="bg-warning size-1.5 rounded-full" /> Pendiente
@@ -154,6 +159,18 @@ function ListaOcurrencias({ lista, datos }: { lista: Ocurrencia[]; datos: Datos 
             <Monto valor={o.montoEsperado} className="text-muted-foreground text-sm font-semibold" />
           ) : (
             <span className="bg-warning-soft text-warning rounded-full px-2 py-0.5 text-[10px] font-semibold">Sin monto</span>
+          )}
+          {!o.pagado && o.fecha && (
+            <a
+              href={enlaceGoogleCalendar(`💸 ${o.recurrente.nombre}${o.montoEsperado ? ` · ${formatCOP(o.montoEsperado)}` : ""}`, o.fecha)}
+              target="_blank"
+              rel="noreferrer"
+              title="Agregar a Google Calendar"
+              aria-label={`Agregar ${o.recurrente.nombre} a Google Calendar`}
+              className="text-muted-foreground hover:text-foreground hidden p-1 sm:block"
+            >
+              <CalendarPlus className="size-4" />
+            </a>
           )}
           {!o.pagado && (
             <Button size="sm" variant="outline" asChild>

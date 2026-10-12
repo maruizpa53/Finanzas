@@ -62,3 +62,23 @@ export async function formCategoria(id: string | null, parentId: string | null, 
 export async function formIngreso(id: string, v: Valores): Promise<Resultado> {
   return editarIngreso({ id, monto_esperado: num(v.monto), dia_pago: num(v.dia_pago) });
 }
+
+export async function formProyecto(id: string | null, v: Valores): Promise<Resultado> {
+  const { guardarProyecto } = await import("./etiquetas");
+  return guardarProyecto(id, {
+    nombre: String(v.nombre ?? ""),
+    emoji: txt(v.emoji),
+    presupuesto: num(v.presupuesto),
+    fecha_inicio: txt(v.fecha_inicio),
+    fecha_fin: txt(v.fecha_fin),
+    moneda: txt(v.moneda),
+    tasa_cambio: dec(v.tasa),
+    notas: txt(v.notas),
+  });
+}
+
+export async function formEtiqueta(id: string | null, v: Valores): Promise<Resultado> {
+  const { crearEtiqueta, editarEtiqueta } = await import("./etiquetas");
+  const datos = { nombre: String(v.nombre ?? ""), emoji: txt(v.emoji), color: txt(v.color) };
+  return id ? editarEtiqueta(id, { ...datos, activa: v.activa === undefined ? true : Boolean(v.activa) }) : crearEtiqueta(datos);
+}

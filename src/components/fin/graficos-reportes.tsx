@@ -43,8 +43,8 @@ export function GraficoTendencia({ datos }: { datos: { anio: number; mes: number
                 ) : null
               }
             />
-            <Bar dataKey="ingresos" fill="var(--color-chart-3)" radius={[4, 4, 0, 0]} maxBarSize={22} isAnimationActive={false} />
-            <Bar dataKey="gastos" fill="var(--color-chart-1)" radius={[4, 4, 0, 0]} maxBarSize={22} isAnimationActive={false} />
+            <Bar dataKey="ingresos" fill="var(--color-chart-3)" radius={[4, 4, 0, 0]} maxBarSize={22} animationDuration={900} animationEasing="ease-out" />
+            <Bar dataKey="gastos" fill="var(--color-chart-1)" radius={[4, 4, 0, 0]} maxBarSize={22} animationDuration={900} animationEasing="ease-out" />
           </BarChart>
         </ResponsiveContainer>
       </div>

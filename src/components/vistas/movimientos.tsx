@@ -17,6 +17,7 @@ export interface FiltrosMovimientos {
   grupo?: string;
   bolsa?: string;
   revisar?: string;
+  etiqueta?: string;
 }
 
 export function VistaMovimientos({ datos, filtros }: { datos: Datos; filtros: FiltrosMovimientos }) {
@@ -29,6 +30,7 @@ export function VistaMovimientos({ datos, filtros }: { datos: Datos; filtros: Fi
   let movs = revision ? datos.movimientos.filter((m) => !m.revisado) : movimientosDelMes(datos.movimientos, anio, mes);
   if (q) movs = movs.filter((m) => `${m.descripcion} ${m.comercio ?? ""} ${m.notas ?? ""} ${m.monto}`.toLowerCase().includes(q.replace(/\./g, "")));
   if (filtros.cuenta) movs = movs.filter((m) => m.cuenta_id === filtros.cuenta || m.cuenta_destino_id === filtros.cuenta);
+  if (filtros.etiqueta) movs = movs.filter((m) => m.etiquetas.includes(filtros.etiqueta!));
   if (filtros.bolsa) movs = movs.filter((m) => m.bolsa === filtros.bolsa);
   if (filtros.grupo) movs = movs.filter((m) => m.categoria_id && (m.categoria_id === filtros.grupo || porId.get(m.categoria_id)?.parent_id === filtros.grupo));
 
@@ -119,6 +121,16 @@ export function VistaMovimientos({ datos, filtros }: { datos: Datos; filtros: Fi
               <option value="lemon">Lemon</option>
               <option value="freelance">Freelance</option>
             </select>
+            {datos.etiquetas.length > 0 && (
+              <select name="etiqueta" defaultValue={filtros.etiqueta ?? ""} className={sel} aria-label="Etiqueta">
+                <option value="">Todas las etiquetas</option>
+                {datos.etiquetas.map((e) => (
+                  <option key={e.id} value={e.id}>
+                    {e.emoji} {e.nombre}
+                  </option>
+                ))}
+              </select>
+            )}
             <Button type="submit" variant="secondary" size="sm" className="h-9">
               Filtrar
             </Button>
@@ -132,7 +144,7 @@ export function VistaMovimientos({ datos, filtros }: { datos: Datos; filtros: Fi
         </>
       )}
 
-      <ListaMovimientos movimientos={movs} cuentas={datos.cuentas} categorias={datos.categorias} hoy={datos.hoy} modoRevision={revision} />
+      <ListaMovimientos movimientos={movs} cuentas={datos.cuentas} categorias={datos.categorias} etiquetas={datos.etiquetas} hoy={datos.hoy} modoRevision={revision} />
     </>
   );
 }

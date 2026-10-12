@@ -94,11 +94,12 @@ export async function cargarDatos(meses = 7): Promise<Datos> {
 
 export async function cargarPreferencias() {
   const supabase = await createClient();
-  const { data } = await supabase.from("user_settings").select("cuenta_default_id, bolsa_default, tags_default, reparto_ingreso").maybeSingle();
+  const { data } = await supabase.from("user_settings").select("cuenta_default_id, bolsa_default, tags_default, reparto_ingreso, calendario_token").maybeSingle();
   return {
     cuentaDefault: data?.cuenta_default_id ?? null,
     bolsaDefault: data?.bolsa_default ?? "personal",
     tagsDefault: data?.tags_default ?? [],
     reparto: leerReparto(data?.reparto_ingreso),
+    calendarioToken: data?.calendario_token ?? null,
   };
 }

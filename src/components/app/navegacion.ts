@@ -7,6 +7,7 @@ import {
   Landmark,
   MessageCircle,
   PiggyBank,
+  Plane,
   Settings,
   Target,
   Wallet,
@@ -30,6 +31,7 @@ export const NAV_PRINCIPAL: ItemNav[] = [
 ];
 
 export const NAV_SECUNDARIA: ItemNav[] = [
+  { href: "/proyectos", titulo: "Viajes y proyectos", icono: Plane },
   { href: "/deudas", titulo: "Deudas", icono: Landmark, subfase: "1e" },
   { href: "/ahorro", titulo: "Ahorro y metas", icono: PiggyBank, subfase: "1e" },
   { href: "/reportes", titulo: "Reportes", icono: BarChart3, subfase: "1e" },

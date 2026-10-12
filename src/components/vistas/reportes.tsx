@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Encabezado } from "@/components/app/encabezado";
 import { Monto } from "@/components/app/monto";
+import { MontoAnimado } from "@/components/app/animado";
 import { FlujoSankey, GraficoTendencia } from "@/components/fin/graficos-reportes";
 import { Kpi, Tarjeta, TituloTarjeta, pct } from "@/components/fin/piezas";
 import { BENEFICIARIOS } from "@/lib/finance/etiquetas";
@@ -10,6 +11,7 @@ import { tituloMes } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { Datos } from "@/lib/finance/modelo";
 import { resumenMes } from "@/lib/finance/calculos";
+import { totalesPorEtiqueta } from "@/lib/finance/proyectos";
 import { claveMes, indexarCategorias, movimientosDelMes, partesFecha, sumarMeses, tendencia, totalesPor } from "@/lib/finance/mes";
 
 export function VistaReportes({ datos, mesParam }: { datos: Datos; mesParam?: string }) {
@@ -41,6 +43,10 @@ export function VistaReportes({ datos, mesParam }: { datos: Datos; mesParam?: st
   }
 
   const sig = sumarMeses(anio, mes, 1);
+  const porEtiqueta = [...totalesPorEtiqueta(movs.filter((m) => m.tipo === "gasto")).entries()]
+    .map(([id, total]) => ({ e: datos.etiquetas.find((x) => x.id === id), total }))
+    .filter((x) => x.e)
+    .sort((a, b) => b.total - a.total);
 
   return (
     <>
@@ -65,18 +71,18 @@ export function VistaReportes({ datos, mesParam }: { datos: Datos; mesParam?: st
       />
 
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Kpi titulo="Ingresos" valor={<Monto valor={r.ingresos} />} />
+        <Kpi titulo="Ingresos" valor={<MontoAnimado valor={r.ingresos} />} />
         <Kpi
           titulo="Gasto personal"
-          valor={<Monto valor={r.gastoPersonal} />}
+          valor={<MontoAnimado valor={r.gastoPersonal} />}
           tendencia={varGasto === null ? null : { texto: pct(Math.abs(varGasto)), bueno: varGasto <= 0, sube: varGasto > 0 }}
           detalle="vs. mes anterior"
         />
-        <Kpi titulo="Flujo neto" valor={<Monto valor={r.flujoNeto} />} />
+        <Kpi titulo="Flujo neto" valor={<MontoAnimado valor={r.flujoNeto} />} />
         <Kpi titulo="Tasa de ahorro" valor={pct(r.tasaAhorro)} detalle={esActual ? "a la fecha · meta 20 %" : "meta 20 %"} />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="escalonado grid gap-6 lg:grid-cols-2">
         <Tarjeta className="lg:col-span-2">
           <TituloTarjeta ayuda="Cómo se reparte el ingreso del mes entre los grupos de gasto">Flujo de caja</TituloTarjeta>
           <FlujoSankey nodos={nodos} enlaces={enlaces} />
@@ -108,6 +114,31 @@ export function VistaReportes({ datos, mesParam }: { datos: Datos; mesParam?: st
         </Tarjeta>
 
         <Tarjeta>
+          <TituloTarjeta ayuda="Un gasto con varias etiquetas suma en cada una (por eso no da el total del mes)">Por etiqueta</TituloTarjeta>
+          {porEtiqueta.length ? (
+            <ul className="grid gap-3">
+              {porEtiqueta.map(({ e, total }) => (
+                <li key={e!.id}>
+                  <Link href={`/movimientos?mes=${claveMes(anio, mes)}&etiqueta=${e!.id}`} className="group block">
+                    <div className="mb-1 flex items-baseline justify-between gap-2 text-sm">
+                      <span className="truncate group-hover:underline">
+                        {e!.emoji} {e!.nombre}
+                      </span>
+                      <Monto valor={total} className="text-xs font-semibold" />
+                    </div>
+                    <div className="bg-muted h-2 overflow-hidden rounded-full">
+                      <div className="animate-llenar h-full rounded-full" style={{ width: `${(total / porEtiqueta[0].total) * 100}%`, backgroundColor: e!.color ?? undefined }} />
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-muted-foreground py-6 text-center text-sm">Aún no hay gastos etiquetados este mes.</p>
+          )}
+        </Tarjeta>
+
+        <Tarjeta>
           <TituloTarjeta>Top categorías</TituloTarjeta>
           <Barras filas={porCategoria.map((c) => ({ nombre: c.clave === "sin" ? "Sin categoría" : `${porId.get(c.clave)?.icono ?? ""} ${porId.get(c.clave)?.nombre ?? ""}`, valor: c.total }))} />
         </Tarjeta>
@@ -136,7 +167,7 @@ function Barras({ filas }: { filas: { nombre: string; valor: number }[] }) {
             </span>
           </div>
           <div className="bg-muted h-2 overflow-hidden rounded-full">
-            <div className="bg-chart-1 h-full rounded-full" style={{ width: `${(f.valor / max) * 100}%` }} />
+            <div className="bg-chart-1 animate-llenar h-full rounded-full" style={{ width: `${(f.valor / max) * 100}%` }} />
           </div>
         </li>
       ))}

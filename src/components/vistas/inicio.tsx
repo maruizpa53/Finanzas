@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { AlertCircle, CalendarDays, ChevronRight, Inbox } from "lucide-react";
 import { Monto } from "@/components/app/monto";
+import { MontoAnimado } from "@/components/app/animado";
+import { BannerRecordatorios } from "@/components/app/banner-recordatorios";
+import { recordatorios } from "@/lib/finance/recordatorios";
+import { resumenProyecto } from "@/lib/finance/proyectos";
 import { Encabezado } from "@/components/app/encabezado";
 import { GraficoAcumulado } from "@/components/fin/grafico-acumulado";
 import { FilaPresupuesto, Kpi, ListaProximos, Tarjeta, TarjetaLemon, TituloTarjeta, pct } from "@/components/fin/piezas";
@@ -52,6 +56,11 @@ export function VistaInicio({ datos }: { datos: Datos }) {
     { nombre: "Disponible", valor: plan.segmentos.disponible, clase: "bg-white/15 ring-1 ring-inset ring-white/40" },
   ];
 
+  const viajes = datos.proyectos
+    .filter((p) => p.activo)
+    .map((p) => ({ p, r: resumenProyecto(p, datos.movimientosProyectos, datos.categorias, datos.hoy) }))
+    .filter((x) => x.r.estado !== "terminado");
+
   const semana = Array.from({ length: 7 }, (_, i) => {
     const fecha = sumarDias(datos.hoy, i);
     return { fecha, pagos: proximos.filter((p) => p.fecha === fecha) };
@@ -59,13 +68,15 @@ export function VistaInicio({ datos }: { datos: Datos }) {
 
   return (
     <>
-      <Encabezado titulo="Hola, Miguel" descripcion={`${saludo(datos.hoy)} · así va su mes`} />
+      <Encabezado titulo="Hola, Miguel 👋" descripcion={`${saludo(datos.hoy)} · así va su mes`} />
+      <BannerRecordatorios items={recordatorios(datos)} />
 
-      <div className="grid gap-4 lg:grid-cols-3 lg:gap-6">
+      <div className="escalonado grid gap-4 lg:grid-cols-3 lg:gap-6">
         <div className="grid content-start gap-4 lg:col-span-2 lg:gap-6">
         {/* Héroe: disponible + plan del mes */}
         <section className="relative overflow-hidden rounded-3xl bg-[linear-gradient(135deg,oklch(0.33_0.13_270),oklch(0.21_0.06_270)_60%,oklch(0.17_0.03_260))] p-5 text-white shadow-lg sm:p-6">
-          <div className="pointer-events-none absolute -top-20 -right-16 size-64 rounded-full bg-[oklch(0.6_0.2_280/0.35)] blur-3xl" />
+          <div className="blob pointer-events-none absolute -top-20 -right-16 size-64 rounded-full bg-[oklch(0.6_0.2_280/0.35)] blur-3xl" />
+          <div className="blob-2 pointer-events-none absolute -bottom-24 left-1/4 size-56 rounded-full bg-[oklch(0.65_0.15_200/0.22)] blur-3xl" />
           <div className="relative">
             <div className="flex items-center justify-between gap-2">
               <p className="flex items-center gap-1 text-sm text-white/75">
@@ -76,7 +87,7 @@ export function VistaInicio({ datos }: { datos: Datos }) {
               </p>
               <span className="rounded-full bg-white/10 px-2.5 py-1 text-xs text-white/80">{nombreDelMes[0].toUpperCase() + nombreDelMes.slice(1)}</span>
             </div>
-            <Monto
+            <MontoAnimado
               valor={plan.disponible}
               className={cn("mt-2 block text-[2.6rem] leading-none font-semibold tracking-tight sm:text-5xl", plan.disponible < 0 && "text-[oklch(0.8_0.15_25)]")}
             />
@@ -85,7 +96,7 @@ export function VistaInicio({ datos }: { datos: Datos }) {
             </p>
 
             {/* Barra del plan (de la propuesta C) */}
-            <div className="mt-6 flex h-3 gap-0.5 overflow-hidden rounded-full">
+            <div className="animate-llenar mt-6 flex h-3 gap-0.5 overflow-hidden rounded-full">
               {segmentos.filter((s) => s.valor > 0).map((s) => (
                 <div key={s.nombre} className={cn("h-full first:rounded-l-full last:rounded-r-full", s.clase)} style={{ flexGrow: s.valor }} title={s.nombre} />
               ))}
@@ -105,7 +116,7 @@ export function VistaInicio({ datos }: { datos: Datos }) {
             {/* Ritmo (de la propuesta A) */}
             <div className="mt-5 grid gap-1.5 border-t border-white/10 pt-4">
               <div className="relative h-2 overflow-hidden rounded-full bg-white/10">
-                <div className="h-full rounded-full bg-[oklch(0.85_0.1_270)]" style={{ width: `${Math.min(gastadoVariableFrac, 1) * 100}%` }} />
+                <div className="animate-llenar h-full rounded-full bg-[oklch(0.85_0.1_270)]" style={{ width: `${Math.min(gastadoVariableFrac, 1) * 100}%` }} />
                 <div className="absolute top-1/2 h-3.5 w-0.5 -translate-y-1/2 rounded-full bg-white" style={{ left: `${plan.ritmo * 100}%` }} />
               </div>
               <div className="flex justify-between text-xs text-white/65">
@@ -131,9 +142,36 @@ export function VistaInicio({ datos }: { datos: Datos }) {
           <div className="col-span-2 lg:col-span-1">
             <TarjetaLemon lemon={lemon} />
           </div>
+          {viajes.map(({ p, r }) => (
+            <Link
+              key={p.id}
+              href={`/proyectos/${p.id}`}
+              className="group relative col-span-2 overflow-hidden rounded-2xl bg-gradient-to-br from-rose-500 via-fuchsia-600 to-indigo-700 p-4 text-white shadow-md lg:col-span-1"
+            >
+              <span className="blob pointer-events-none absolute -top-10 -right-8 size-32 rounded-full bg-white/15 blur-2xl" />
+              <div className="relative flex items-center gap-3">
+                <span className="text-3xl">{p.emoji ?? "✈️"}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold">{p.nombre}</p>
+                  <p className="text-xs text-white/80">
+                    {r.estado === "planeando" && r.diasParaEmpezar !== null ? `Faltan ${r.diasParaEmpezar} días` : r.estado === "en_curso" ? `Día ${r.diaActual} de ${r.duracion}` : "Ponga fechas y presupuesto"}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <MontoAnimado valor={r.gastado} className="text-sm font-semibold" />
+                  {r.presupuesto !== null && <p className="text-[11px] text-white/75">de <Monto valor={r.presupuesto} /></p>}
+                </div>
+              </div>
+              {r.porcentaje !== null && (
+                <div className="relative mt-3 h-1.5 overflow-hidden rounded-full bg-white/20">
+                  <div className="animate-llenar h-full rounded-full bg-white" style={{ width: `${Math.min(r.porcentaje, 1) * 100}%` }} />
+                </div>
+              )}
+            </Link>
+          ))}
           <Kpi
             titulo="Gasto personal"
-            valor={<Monto valor={comp.actual} />}
+            valor={<MontoAnimado valor={comp.actual} />}
             tendencia={
               comp.variacion === null
                 ? null
@@ -148,7 +186,7 @@ export function VistaInicio({ datos }: { datos: Datos }) {
             detalle="proyectada · meta 20 %"
             ayuda="(Ingreso − fijos − deudas − gasto variable proyectado) ÷ ingreso. La Cadena cuenta como ahorro."
           />
-          <Kpi titulo="Deuda total" valor={<Monto valor={deuda.total} />} detalle={<>cuotas <Monto valor={deuda.cuotas} />/mes</>} href="/deudas" />
+          <Kpi titulo="Deuda total" valor={<MontoAnimado valor={deuda.total} />} detalle={<>cuotas <Monto valor={deuda.cuotas} />/mes</>} href="/deudas" />
           <Link href="/movimientos?revisar=1" className="bg-card hover:border-primary/40 flex items-center gap-3 rounded-2xl border p-4 shadow-xs transition-colors">
             <span className={cn("flex size-9 items-center justify-center rounded-xl text-sm font-semibold", revisar ? "bg-primary text-primary-foreground" : "bg-positive-soft text-positive")}>
               {revisar || <Inbox className="size-4" />}

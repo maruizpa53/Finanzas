@@ -14,7 +14,8 @@ import { BENEFICIARIOS, nombreCuenta } from "@/lib/finance/etiquetas";
 import { actualizarMovimiento, eliminarMovimiento, marcarRevisados } from "@/lib/acciones/movimientos";
 import { formatFecha } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import type { Beneficiario, Bolsa, Categoria, Cuenta, Movimiento, TipoMovimiento } from "@/lib/finance/modelo";
+import type { Beneficiario, Bolsa, Categoria, Cuenta, Etiqueta, Movimiento, TipoMovimiento } from "@/lib/finance/modelo";
+import { SelectorEtiquetas } from "./registro-extras";
 
 const DIAS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
 
@@ -30,18 +31,21 @@ export function ListaMovimientos({
   categorias,
   hoy,
   modoRevision = false,
+  etiquetas = [],
 }: {
   movimientos: Movimiento[];
   cuentas: Cuenta[];
   categorias: Categoria[];
   hoy: string;
   modoRevision?: boolean;
+  etiquetas?: Etiqueta[];
 }) {
   const router = useRouter();
   const [editando, setEditando] = useState<Movimiento | null>(null);
   const [pendiente, iniciar] = useTransition();
   const cat = useMemo(() => new Map(categorias.map((c) => [c.id, c])), [categorias]);
   const cta = useMemo(() => new Map(cuentas.map((c) => [c.id, c])), [cuentas]);
+  const tag = useMemo(() => new Map(etiquetas.map((e) => [e.id, e])), [etiquetas]);
 
   const grupos = useMemo(() => {
     const m = new Map<string, Movimiento[]>();
@@ -71,7 +75,7 @@ export function ListaMovimientos({
           Marcar todos como revisados
         </Button>
       )}
-      <div className="grid gap-5">
+      <div className="escalonado grid gap-5">
         {grupos.map(([fecha, movs]) => {
           const totalGasto = movs.filter((m) => m.tipo === "gasto" && m.bolsa !== "lemon").reduce((s, m) => s + m.monto, 0);
           return (
@@ -108,6 +112,14 @@ export function ListaMovimientos({
                                 : `${c?.nombre ?? "Sin categoría"} · ${cuenta ? nombreCuenta(cuenta) : ""}`}
                             </span>
                             <ChipBolsa bolsa={m.bolsa} />
+                            {m.etiquetas.map((id) => {
+                              const e = tag.get(id);
+                              return e ? (
+                                <span key={id} title={e.nombre} className="shrink-0 rounded-full px-1.5 text-[10px] leading-4 text-white" style={{ backgroundColor: e.color ?? "#64748B" }}>
+                                  {e.emoji} <span className="hidden sm:inline">{e.nombre}</span>
+                                </span>
+                              ) : null;
+                            })}
                             {m.bolsa === "lemon" && m.reembolso_estado && m.reembolso_estado !== "pendiente" && (
                               <span className="text-[10px]">{m.reembolso_estado === "presentado" ? "· presentado" : "· reembolsado"}</span>
                             )}
@@ -136,6 +148,7 @@ export function ListaMovimientos({
               mov={editando}
               cuentas={cuentas}
               categorias={categorias}
+              etiquetas={etiquetas}
               alTerminar={() => {
                 setEditando(null);
                 router.refresh();
@@ -152,11 +165,13 @@ function EditorMovimiento({
   mov,
   cuentas,
   categorias,
+  etiquetas,
   alTerminar,
 }: {
   mov: Movimiento;
   cuentas: Cuenta[];
   categorias: Categoria[];
+  etiquetas: Etiqueta[];
   alTerminar: () => void;
 }) {
   const [pendiente, iniciar] = useTransition();
@@ -172,6 +187,7 @@ function EditorMovimiento({
   const [comercio, setComercio] = useState(mov.comercio ?? "");
   const [notas, setNotas] = useState(mov.notas ?? "");
   const [crearRegla, setCrearRegla] = useState(false);
+  const [tags, setTags] = useState<string[]>(mov.etiquetas);
   const entre = tipo === "transferencia" || tipo === "pago_tarjeta";
   const cambioCategoria = categoriaId !== (mov.categoria_id ?? "") || bolsa !== mov.bolsa;
   const patron = (comercio || descripcion).trim();
@@ -193,6 +209,7 @@ function EditorMovimiento({
           descripcion,
           comercio: comercio || null,
           notas: notas || null,
+          etiquetas: entre ? [] : tags,
         },
         crearRegla && cambioCategoria && patron ? { patron } : null,
       );
@@ -314,6 +331,7 @@ function EditorMovimiento({
             </div>
           </>
         )}
+        {!entre && <SelectorEtiquetas etiquetas={etiquetas.filter((e) => e.activa || tags.includes(e.id))} valor={tags} onChange={setTags} />}
         <Campo etiqueta="Descripción">
           <Input value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
         </Campo>

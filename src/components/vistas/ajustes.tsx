@@ -6,10 +6,12 @@ import { Monto } from "@/components/app/monto";
 import { HojaFormulario } from "@/components/fin/hoja-formulario";
 import { Tarjeta, TituloTarjeta } from "@/components/fin/piezas";
 import { formCategoria, formIngreso } from "@/lib/acciones/formularios";
+import { SincronizarCalendario } from "@/components/fin/sincronizar-calendario";
+import { EtiquetasAjustes } from "@/components/fin/etiquetas-ajustes";
 import { cn } from "@/lib/utils";
 import type { Datos } from "@/lib/finance/modelo";
 
-export function VistaAjustes({ datos }: { datos: Datos }) {
+export function VistaAjustes({ datos, calendarioToken = null }: { datos: Datos; calendarioToken?: string | null }) {
   const grupos = datos.categorias.filter((c) => !c.parent_id);
   return (
     <>
@@ -46,6 +48,10 @@ export function VistaAjustes({ datos }: { datos: Datos }) {
             </ul>
           </Tarjeta>
           <Tarjeta>
+            <TituloTarjeta>📅 Google Calendar</TituloTarjeta>
+            <SincronizarCalendario tokenInicial={calendarioToken} />
+          </Tarjeta>
+          <Tarjeta>
             <TituloTarjeta>Atajos</TituloTarjeta>
             <div className="grid gap-2">
               <Button variant="outline" asChild className="justify-start">
@@ -71,7 +77,12 @@ export function VistaAjustes({ datos }: { datos: Datos }) {
           </Tarjeta>
         </div>
 
-        <Tarjeta className="lg:col-span-2">
+        <div className="grid content-start gap-6 lg:col-span-2">
+        <Tarjeta>
+          <TituloTarjeta ayuda="Un gasto puede tener varias etiquetas además de su categoría">Etiquetas</TituloTarjeta>
+          <EtiquetasAjustes etiquetas={datos.etiquetas} />
+        </Tarjeta>
+        <Tarjeta>
           <TituloTarjeta ayuda="Toque una categoría para cambiar su emoji o nombre">Categorías</TituloTarjeta>
           <div className="grid gap-5 sm:grid-cols-2">
             {grupos.map((g) => (
@@ -119,6 +130,7 @@ export function VistaAjustes({ datos }: { datos: Datos }) {
             ))}
           </div>
         </Tarjeta>
+        </div>
       </div>
     </>
   );

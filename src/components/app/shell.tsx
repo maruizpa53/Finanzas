@@ -69,7 +69,9 @@ export function AppShell({
           <div className="flex h-14 items-center gap-1 px-3">
             <Link href="/" className="flex items-center gap-2 px-1">
               <Logo />
-              <span className="font-semibold tracking-tight">{actual?.titulo ?? "Mis Finanzas"}</span>
+              <span key={actual?.href ?? "inicio"} className="animate-deslizar font-semibold tracking-tight">
+                {actual?.titulo ?? "Mis Finanzas"}
+              </span>
             </Link>
             <div className="ml-auto flex items-center">
               <Button
@@ -87,7 +89,9 @@ export function AppShell({
         </header>
 
         <main className="mx-auto w-full max-w-6xl min-w-0 flex-1 px-4 pt-5 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:px-6 lg:px-8 lg:py-8">
-          {children}
+          <div key={pathname} className="animate-entrada">
+            {children}
+          </div>
         </main>
 
         {/* Barra inferior (móvil) */}
@@ -100,8 +104,9 @@ export function AppShell({
               <Link
                 href="/movimientos/nuevo"
                 aria-label="Registrar movimiento"
-                className="bg-primary text-primary-foreground shadow-primary/30 flex size-13 -translate-y-3 items-center justify-center rounded-full shadow-lg transition-transform active:scale-95"
+                className="bg-primary text-primary-foreground shadow-primary/30 relative flex size-13 -translate-y-3 items-center justify-center rounded-full shadow-lg transition-transform active:scale-90"
               >
+                <span className="bg-primary/40 absolute inset-0 -z-10 animate-ping rounded-full [animation-duration:2.8s]" />
                 <Plus className="size-6" strokeWidth={2.5} />
               </Link>
             </div>

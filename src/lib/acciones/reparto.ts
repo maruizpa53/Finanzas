@@ -71,7 +71,7 @@ export async function crearIngresoRepartido(entrada: EntradaIngresoRepartido): P
     })
     .select("id")
     .single();
-  if (e0) return { ok: false, error: "No se pudo guardar el ingreso: " + e0.message };
+  if (e0 || !ingreso) return { ok: false, error: "No se pudo guardar el ingreso: " + (e0?.message ?? "") };
 
   const base = { fecha: v.fecha, cuenta_id: v.cuenta_id, origen: "manual" as const, grupo_id: grupo, bolsa: "personal" as const };
   const fallos: string[] = [];
@@ -141,7 +141,7 @@ export async function crearIngresoRepartido(entrada: EntradaIngresoRepartido): P
   revalidatePath("/", "layout");
   if (fallos.length) return { ok: false, error: `El ingreso quedó guardado, pero ${fallos.length} parte(s) fallaron: ${fallos[0]}` };
   const partes = r.lineas.filter((l) => l.monto).length;
-  return { ok: true, id: ingreso.id, mensaje: partes ? `Ingreso guardado y repartido en ${partes} parte${partes > 1 ? "s" : ""}` : "Ingreso guardado" };
+  return { ok: true, id: grupo, mensaje: partes ? `Ingreso guardado y repartido en ${partes} parte${partes > 1 ? "s" : ""}` : "Ingreso guardado" };
 }
 
 /** Deshace un ingreso repartido completo (borra todo el grupo; los abonos y aportes caen en cascada o se borran). */
