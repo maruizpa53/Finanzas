@@ -525,6 +525,7 @@ export type Database = {
           origen: E["origen_movimiento"]
           recurring_item_id: string | null
           reembolso_estado: E["estado_reembolso"] | null
+          revisado: boolean
           tipo: E["tipo_movimiento"]
           updated_at: string
           user_id: string
@@ -549,6 +550,7 @@ export type Database = {
           origen?: E["origen_movimiento"]
           recurring_item_id?: string | null
           reembolso_estado?: E["estado_reembolso"] | null
+          revisado?: boolean
           tipo: E["tipo_movimiento"]
           updated_at?: string
           user_id?: string
@@ -633,3 +635,6 @@ export type TablesInsert<T extends keyof PublicSchema["Tables"]> =
   PublicSchema["Tables"][T]["Insert"]
 
 export type Enums<T extends keyof PublicSchema["Enums"]> = PublicSchema["Enums"][T]
+
+export type TablesUpdate<T extends keyof PublicSchema["Tables"]> =
+  PublicSchema["Tables"][T]["Update"]
