@@ -1,5 +1,10 @@
-import { EnConstruccion } from "@/components/app/en-construccion";
+import { VistaDeudas } from "@/components/vistas/patrimonio";
+import { cargarDatos } from "@/lib/data/cargar";
 
-export default function Page() {
-  return <EnConstruccion href="/deudas" />;
+export const dynamic = "force-dynamic";
+export const metadata = { title: "Deudas · Mis Finanzas" };
+
+export default async function Page() {
+  const datos = await cargarDatos();
+  return <VistaDeudas datos={datos} />;
 }

@@ -10,6 +10,8 @@ export const metadata: Metadata = {
   description: "Portal privado de finanzas personales",
   robots: { index: false, follow: false },
   appleWebApp: { capable: true, title: "Finanzas", statusBarStyle: "default" },
+  icons: { apple: "/icons/apple-touch-icon.png" },
+  formatDetection: { telephone: false },
 };
 
 export const viewport: Viewport = {
