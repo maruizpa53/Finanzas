@@ -24,6 +24,9 @@ const esquemaMovimiento = z
     comercio: z.string().trim().max(120).nullable().optional(),
     notas: z.string().trim().max(500).nullable().optional(),
     recurring_item_id: z.string().uuid().nullable().optional(),
+    etiquetas: z.array(z.string().uuid()).max(10).optional(),
+    moneda_original: z.string().trim().length(3).toUpperCase().nullable().optional(),
+    monto_original: z.coerce.number().positive().nullable().optional(),
   })
   .refine((v) => (v.tipo === "transferencia" || v.tipo === "pago_tarjeta" ? Boolean(v.cuenta_destino_id) : true), {
     message: "Elija la cuenta de destino",
@@ -34,6 +37,20 @@ export type EntradaMovimiento = z.input<typeof esquemaMovimiento>;
 
 function revalidarTodo() {
   revalidatePath("/", "layout");
+}
+
+type Cliente = Awaited<ReturnType<typeof createClient>>;
+
+/** Reemplaza las etiquetas de un movimiento. */
+async function ponerEtiquetas(supabase: Cliente, transactionId: string, etiquetas: string[] | undefined, reemplazar: boolean) {
+  if (etiquetas === undefined) return null;
+  if (reemplazar) {
+    const { error } = await supabase.from("transaction_tags").delete().eq("transaction_id", transactionId);
+    if (error) return error;
+  }
+  if (!etiquetas.length) return null;
+  const { error } = await supabase.from("transaction_tags").insert([...new Set(etiquetas)].map((tag_id) => ({ transaction_id: transactionId, tag_id })));
+  return error;
 }
 
 export async function crearMovimiento(entrada: EntradaMovimiento): Promise<Resultado> {
@@ -93,19 +110,29 @@ export async function crearMovimiento(entrada: EntradaMovimiento): Promise<Resul
       recurring_item_id: recurrente,
       origen: "manual",
       revisado: true,
+      moneda_original: v.moneda_original && v.monto_original ? v.moneda_original : null,
+      monto_original: v.moneda_original && v.monto_original ? v.monto_original : null,
     })
     .select("id")
     .single();
   if (error) return { ok: false, error: "No se pudo guardar: " + error.message };
+  const eTags = await ponerEtiquetas(supabase, data.id, v.etiquetas, false);
+  if (eTags) return { ok: false, error: "Se guardó, pero sin etiquetas: " + eTags.message };
 
   // Recordar cuenta y bolsa para el próximo registro.
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (user) {
-    await supabase
-      .from("user_settings")
-      .upsert({ user_id: user.id, cuenta_default_id: v.cuenta_id, bolsa_default: esMovEntreCuentas ? "personal" : v.bolsa });
+    // Las etiquetas de proyectos (ej. Corea) no se recuerdan: solo las de "para quién" (Mío, Familia…).
+    const { data: proys } = await supabase.from("projects").select("tag_id");
+    const deProyecto = new Set((proys ?? []).map((x) => x.tag_id));
+    await supabase.from("user_settings").upsert({
+      user_id: user.id,
+      cuenta_default_id: v.cuenta_id,
+      bolsa_default: esMovEntreCuentas ? "personal" : v.bolsa,
+      ...(v.etiquetas && !esMovEntreCuentas ? { tags_default: v.etiquetas.filter((t) => !deProyecto.has(t)) } : {}),
+    });
   }
 
   revalidarTodo();
@@ -138,9 +165,14 @@ export async function actualizarMovimiento(
       comercio: v.comercio || null,
       notas: v.notas || null,
       revisado: true,
+      ...(v.moneda_original !== undefined
+        ? { moneda_original: v.moneda_original && v.monto_original ? v.moneda_original : null, monto_original: v.moneda_original && v.monto_original ? v.monto_original : null }
+        : {}),
     })
     .eq("id", id);
   if (error) return { ok: false, error: "No se pudo actualizar: " + error.message };
+  const eTags = await ponerEtiquetas(supabase, id, v.etiquetas, true);
+  if (eTags) return { ok: false, error: "No se pudieron guardar las etiquetas: " + eTags.message };
 
   let mensaje = "Actualizado";
   if (regla?.patron && v.categoria_id && !esMovEntreCuentas) {

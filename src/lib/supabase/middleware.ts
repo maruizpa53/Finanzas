@@ -6,7 +6,13 @@ const RUTAS_PUBLICAS = ["/login"];
 // Vistas previas de diseño con datos de ejemplo: solo en desarrollo.
 const RUTAS_DESARROLLO = process.env.NODE_ENV === "production" ? [] : ["/preview"];
 
+// Feed de calendario: se protege con su propio token secreto, no con la sesión.
+const RUTAS_CON_TOKEN = ["/cal/"];
+
 export async function updateSession(request: NextRequest) {
+  if (RUTAS_CON_TOKEN.some((r) => request.nextUrl.pathname.startsWith(r))) {
+    return NextResponse.next({ request });
+  }
   if (RUTAS_DESARROLLO.some((r) => request.nextUrl.pathname.startsWith(r))) {
     return NextResponse.next({ request });
   }
