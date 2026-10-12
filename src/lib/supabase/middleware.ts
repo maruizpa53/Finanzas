@@ -3,8 +3,14 @@ import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "./database.types";
 
 const RUTAS_PUBLICAS = ["/login"];
+// Vistas previas de diseño con datos de ejemplo: solo en desarrollo.
+const RUTAS_DESARROLLO = process.env.NODE_ENV === "production" ? [] : ["/preview"];
 
 export async function updateSession(request: NextRequest) {
+  if (RUTAS_DESARROLLO.some((r) => request.nextUrl.pathname.startsWith(r))) {
+    return NextResponse.next({ request });
+  }
+
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient<Database>(
