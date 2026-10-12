@@ -27,7 +27,7 @@ async function todasLasFilas<T>(pagina: (desde: number, hasta: number) => Promis
 }
 
 /** Carga todo lo necesario para las vistas. `meses` = historial de movimientos hacia atrás. */
-export async function cargarDatos(meses = 7): Promise<Datos> {
+export async function cargarDatos(meses = 13): Promise<Datos> {
   const supabase = await createClient();
   const hoy = hoyBogota();
   const { anio, mes } = partesFecha(hoy);
