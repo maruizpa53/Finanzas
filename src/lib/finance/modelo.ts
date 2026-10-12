@@ -54,6 +54,35 @@ export interface Movimiento {
   lemon_settlement_id: string | null;
   recurring_item_id: string | null;
   revisado: boolean;
+  /** Movimientos creados juntos (reparto de un ingreso). */
+  grupo_id: string | null;
+  moneda_original: string | null;
+  monto_original: number | null;
+  /** Ids de etiquetas. */
+  etiquetas: string[];
+}
+
+export interface Etiqueta {
+  id: string;
+  nombre: string;
+  emoji: string | null;
+  color: string | null;
+  orden: number;
+  activa: boolean;
+}
+
+export interface Proyecto {
+  id: string;
+  nombre: string;
+  emoji: string | null;
+  tag_id: string | null;
+  presupuesto: number | null;
+  fecha_inicio: string | null;
+  fecha_fin: string | null;
+  moneda: string | null;
+  tasa_cambio: number | null;
+  notas: string | null;
+  activo: boolean;
 }
 
 export interface Recurrente {
@@ -169,4 +198,8 @@ export interface Datos {
   gastosLemon: Movimiento[];
   /** Saldo actual por cuenta (vista account_balances). */
   saldos: Record<string, number>;
+  etiquetas: Etiqueta[];
+  proyectos: Proyecto[];
+  /** Movimientos de cualquier fecha con la etiqueta de algún proyecto. */
+  movimientosProyectos: Movimiento[];
 }

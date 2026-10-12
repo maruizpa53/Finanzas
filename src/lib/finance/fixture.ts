@@ -38,6 +38,7 @@ export const CATEGORIAS: Categoria[] = [
   cat("c-milo", "Milo", "🐶", "g-personal", { es_fijo: true, beneficiario_default: "milo" }),
   cat("c-rest", "Restaurantes", "🍽️", "g-personal", { beneficiario_default: "yo" }),
   cat("c-transp", "Transporte", "🚕", "g-personal", { beneficiario_default: "yo" }),
+  cat("c-viajes", "Viajes", "✈️", "g-personal", { beneficiario_default: "yo" }),
   cat("c-netflix", "Netflix", "📺", "g-subs", { es_fijo: true, beneficiario_default: "hogar" }),
   cat("c-sandra", "Sandra Ballesteros", "🤝", "g-deudas", { es_fijo: true }),
   cat("c-martha", "Martha Sánchez", "🤝", "g-deudas", { es_fijo: true }),
@@ -99,6 +100,10 @@ const mov = (fecha: string, descripcion: string, monto: number, categoria_id: st
   lemon_settlement_id: null,
   recurring_item_id: null,
   revisado: true,
+  grupo_id: null,
+  moneda_original: null,
+  monto_original: null,
+  etiquetas: [],
   ...extra,
 });
 
@@ -146,6 +151,13 @@ export const MOVIMIENTOS: Movimiento[] = [
   lemon("2026-10-09", 480_000),
 ];
 
+/** Gastos del viaje a Corea (solo para la vista del proyecto; no alteran los totales de las pruebas). */
+export const MOVIMIENTOS_COREA: Movimiento[] = [
+  mov("2026-08-20", "Tiquetes Bogotá – Seúl", 6_800_000, "c-viajes", { comercio: "Avianca", cuenta_id: "a-nu-tc", etiquetas: ["t-corea", "t-mio"] }),
+  mov("2026-09-14", "Boletas partido", 1_250_000, "c-viajes", { comercio: "FIFA", cuenta_id: "a-nu-tc", etiquetas: ["t-corea"], moneda_original: "USD", monto_original: 300 }),
+  mov("2026-10-02", "Hotel Seúl (anticipo)", 1_900_000, "c-viajes", { comercio: "Booking", cuenta_id: "a-nu-tc", etiquetas: ["t-corea"] }),
+];
+
 export const DATOS_EJEMPLO: Datos = {
   hoy: "2026-10-12",
   cuentas: [
@@ -182,7 +194,20 @@ export const DATOS_EJEMPLO: Datos = {
   aportes: [],
   gastosLemon: [],
   saldos: {},
+  etiquetas: [
+    { id: "t-mio", nombre: "Mío", emoji: "🙋", color: "#6366F1", orden: 1, activa: true },
+    { id: "t-familia", nombre: "Familia", emoji: "👨‍👩‍👦", color: "#F59E0B", orden: 2, activa: true },
+    { id: "t-carro", nombre: "Carro", emoji: "🚗", color: "#0EA5E9", orden: 3, activa: true },
+    { id: "t-billar", nombre: "Billar", emoji: "🎱", color: "#16A34A", orden: 4, activa: true },
+    { id: "t-torneos", nombre: "Torneos", emoji: "🏆", color: "#EAB308", orden: 5, activa: true },
+    { id: "t-corea", nombre: "Corea – World Cup", emoji: "🇰🇷", color: "#E11D48", orden: 6, activa: true },
+  ],
+  proyectos: [
+    { id: "pr-corea", nombre: "World Cup Corea", emoji: "🇰🇷", tag_id: "t-corea", presupuesto: 18_000_000, fecha_inicio: "2026-11-20", fecha_fin: "2026-12-05", moneda: "KRW", tasa_cambio: 2.95, notas: null, activo: true },
+  ],
+  movimientosProyectos: [],
 };
+DATOS_EJEMPLO.movimientosProyectos = MOVIMIENTOS_COREA;
 DATOS_EJEMPLO.gastosLemon = MOVIMIENTOS.filter((m) => m.bolsa === "lemon");
 DATOS_EJEMPLO.saldos = Object.fromEntries(
   DATOS_EJEMPLO.cuentas.map((c) => [c.id, saldoCuenta(c.saldo_inicial, MOVIMIENTOS.filter((m) => m.fecha >= c.saldo_inicial_fecha), c.id)]),
