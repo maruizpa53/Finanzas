@@ -57,3 +57,9 @@ const MESES = [
 export function nombreMes(anio: number, mes: number): string {
   return `${MESES[mes - 1]} de ${anio}`;
 }
+
+/** (2026, 10) → "Octubre de 2026" */
+export function tituloMes(anio: number, mes: number): string {
+  const t = nombreMes(anio, mes);
+  return t[0].toUpperCase() + t.slice(1);
+}
