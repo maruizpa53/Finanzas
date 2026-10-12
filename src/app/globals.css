@@ -3,11 +3,17 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ---------------------------------------------------------------------------
+   Sistema de diseño · Mis Finanzas
+   Neutros fríos + acento índigo. Semánticos: positive, warning, negative,
+   lemon (exclusivo bolsa Lemon) y freelance. Gastar no es rojo por defecto.
+   --------------------------------------------------------------------------- */
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+  --font-sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, monospace;
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
@@ -20,71 +26,142 @@
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
+  --color-destructive: var(--negative);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-surface: var(--surface);
   --color-positive: var(--positive);
+  --color-positive-soft: var(--positive-soft);
   --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-negative: var(--negative);
+  --color-negative-soft: var(--negative-soft);
   --color-lemon: var(--lemon);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
+  --color-lemon-soft: var(--lemon-soft);
+  --color-lemon-foreground: var(--lemon-foreground);
+  --color-freelance: var(--freelance);
+  --color-freelance-soft: var(--freelance-soft);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 6px);
+  --radius-md: calc(var(--radius) - 4px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
 }
 
 :root {
-  --radius: 0.75rem;
-  --background: oklch(0.985 0.002 247);
-  --foreground: oklch(0.18 0.02 260);
+  --radius: 0.875rem;
+  --background: oklch(0.982 0.003 264);
+  --foreground: oklch(0.2 0.015 265);
+  --surface: oklch(0.965 0.004 264);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.02 260);
+  --card-foreground: oklch(0.2 0.015 265);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.18 0.02 260);
-  --primary: oklch(0.45 0.16 264);
+  --popover-foreground: oklch(0.2 0.015 265);
+  --primary: oklch(0.47 0.19 268);
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.96 0.005 260);
-  --secondary-foreground: oklch(0.25 0.02 260);
-  --muted: oklch(0.96 0.005 260);
-  --muted-foreground: oklch(0.52 0.02 260);
-  --accent: oklch(0.95 0.01 260);
-  --accent-foreground: oklch(0.25 0.02 260);
-  --destructive: oklch(0.58 0.22 27);
-  --border: oklch(0.92 0.005 260);
-  --input: oklch(0.9 0.005 260);
-  --ring: oklch(0.6 0.12 264);
-  --positive: oklch(0.6 0.15 155);
-  --warning: oklch(0.75 0.16 75);
-  --lemon: oklch(0.82 0.17 98);
+  --secondary: oklch(0.955 0.006 264);
+  --secondary-foreground: oklch(0.27 0.02 265);
+  --muted: oklch(0.955 0.006 264);
+  --muted-foreground: oklch(0.5 0.018 265);
+  --accent: oklch(0.95 0.012 268);
+  --accent-foreground: oklch(0.3 0.08 268);
+  --border: oklch(0.915 0.006 264);
+  --input: oklch(0.89 0.008 264);
+  --ring: oklch(0.6 0.15 268);
+  --positive: oklch(0.56 0.14 155);
+  --positive-soft: oklch(0.95 0.04 155);
+  --warning: oklch(0.68 0.15 65);
+  --warning-soft: oklch(0.96 0.05 80);
+  --negative: oklch(0.56 0.2 25);
+  --negative-soft: oklch(0.95 0.035 25);
+  --lemon: oklch(0.86 0.17 100);
+  --lemon-soft: oklch(0.97 0.07 102);
+  --lemon-foreground: oklch(0.42 0.09 95);
+  --freelance: oklch(0.6 0.11 190);
+  --freelance-soft: oklch(0.95 0.035 190);
+  --chart-1: oklch(0.47 0.19 268);
+  --chart-2: oklch(0.7 0.12 230);
+  --chart-3: oklch(0.6 0.11 190);
+  --chart-4: oklch(0.75 0.14 75);
+  --chart-5: oklch(0.65 0.16 330);
 }
 
 .dark {
-  --background: oklch(0.16 0.015 260);
-  --foreground: oklch(0.96 0.005 260);
-  --card: oklch(0.21 0.02 260);
-  --card-foreground: oklch(0.96 0.005 260);
-  --popover: oklch(0.21 0.02 260);
-  --popover-foreground: oklch(0.96 0.005 260);
-  --primary: oklch(0.7 0.14 264);
-  --primary-foreground: oklch(0.16 0.015 260);
-  --secondary: oklch(0.27 0.02 260);
-  --secondary-foreground: oklch(0.96 0.005 260);
-  --muted: oklch(0.27 0.02 260);
-  --muted-foreground: oklch(0.7 0.02 260);
-  --accent: oklch(0.27 0.02 260);
-  --accent-foreground: oklch(0.96 0.005 260);
-  --destructive: oklch(0.7 0.19 22);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.55 0.1 264);
+  --background: oklch(0.155 0.01 265);
+  --foreground: oklch(0.95 0.004 264);
+  --surface: oklch(0.185 0.012 265);
+  --card: oklch(0.205 0.013 265);
+  --card-foreground: oklch(0.95 0.004 264);
+  --popover: oklch(0.225 0.014 265);
+  --popover-foreground: oklch(0.95 0.004 264);
+  --primary: oklch(0.7 0.15 270);
+  --primary-foreground: oklch(0.16 0.02 265);
+  --secondary: oklch(0.26 0.015 265);
+  --secondary-foreground: oklch(0.93 0.005 264);
+  --muted: oklch(0.25 0.014 265);
+  --muted-foreground: oklch(0.7 0.015 265);
+  --accent: oklch(0.27 0.03 268);
+  --accent-foreground: oklch(0.92 0.03 268);
+  --border: oklch(1 0 0 / 9%);
+  --input: oklch(1 0 0 / 14%);
+  --ring: oklch(0.6 0.12 270);
+  --positive: oklch(0.74 0.15 155);
+  --positive-soft: oklch(0.3 0.06 155);
+  --warning: oklch(0.8 0.14 75);
+  --warning-soft: oklch(0.32 0.06 70);
+  --negative: oklch(0.7 0.18 25);
+  --negative-soft: oklch(0.3 0.07 25);
+  --lemon: oklch(0.88 0.16 100);
+  --lemon-soft: oklch(0.3 0.06 100);
+  --lemon-foreground: oklch(0.9 0.12 100);
+  --freelance: oklch(0.75 0.11 190);
+  --freelance-soft: oklch(0.3 0.05 190);
+  --chart-1: oklch(0.7 0.15 270);
+  --chart-2: oklch(0.75 0.11 230);
+  --chart-3: oklch(0.75 0.11 190);
+  --chart-4: oklch(0.8 0.13 75);
+  --chart-5: oklch(0.72 0.15 330);
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
   body {
     @apply bg-background text-foreground;
-    font-feature-settings: "tnum";
+    font-feature-settings: "cv11", "ss01";
+  }
+}
+
+/* Números: siempre tabulares para que las columnas de montos alineen. */
+.monto,
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Modo discreto: oculta los montos sin tocar el HTML de cada componente. */
+.discreto .monto > span {
+  display: none;
+}
+.discreto .monto::before {
+  content: "$•••••";
+  letter-spacing: 0.05em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
 }
