@@ -902,7 +902,9 @@ export type Database = {
           activa: boolean
           color: string | null
           created_at: string
+          descripcion: string | null
           emoji: string | null
+          grupo: string
           id: string
           nombre: string
           orden: number
@@ -912,7 +914,9 @@ export type Database = {
           activa?: boolean
           color?: string | null
           created_at?: string
+          descripcion?: string | null
           emoji?: string | null
+          grupo?: string
           id?: string
           nombre: string
           orden?: number
@@ -922,7 +926,9 @@ export type Database = {
           activa?: boolean
           color?: string | null
           created_at?: string
+          descripcion?: string | null
           emoji?: string | null
+          grupo?: string
           id?: string
           nombre?: string
           orden?: number
@@ -1251,7 +1257,7 @@ export type Database = {
         | "bimestral"
         | "anual"
       origen_movimiento: "manual" | "chat" | "importacion"
-      tipo_categoria: "gasto" | "ingreso"
+      tipo_categoria: "gasto" | "ingreso" | "transferencia"
       tipo_cuenta: "debito" | "credito" | "billetera" | "efectivo"
       tipo_movimiento: "gasto" | "ingreso" | "transferencia" | "pago_tarjeta"
     }
@@ -1395,7 +1401,7 @@ export const Constants = {
         "anual",
       ],
       origen_movimiento: ["manual", "chat", "importacion"],
-      tipo_categoria: ["gasto", "ingreso"],
+      tipo_categoria: ["gasto", "ingreso", "transferencia"],
       tipo_cuenta: ["debito", "credito", "billetera", "efectivo"],
       tipo_movimiento: ["gasto", "ingreso", "transferencia", "pago_tarjeta"],
     },

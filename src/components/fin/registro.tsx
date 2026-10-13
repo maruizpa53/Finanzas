@@ -14,6 +14,7 @@ import { crearIngresoRepartido, eliminarGrupo } from "@/lib/acciones/reparto";
 import type { Ahorro, Beneficiario, Bolsa, Categoria, Cuenta, Deuda, Etiqueta, Proyecto, TipoMovimiento } from "@/lib/finance/modelo";
 import type { LineaReparto } from "@/lib/finance/reparto";
 import { EditorReparto, SelectorEtiquetas, ToggleProyecto } from "./registro-extras";
+import { categoriaTransferenciaSugerida } from "@/lib/finance/transferencias";
 import { BENEFICIARIOS, nombreCuenta } from "@/lib/finance/etiquetas";
 
 export interface PrefillRegistro {
@@ -92,6 +93,7 @@ export function RegistroRapido({
   const [lineas, setLineas] = useState<LineaReparto[]>(reparto);
   const [verReparto, setVerReparto] = useState(false);
   const [recordar, setRecordar] = useState(true);
+  const [catTransfManual, setCatTransfManual] = useState(false);
 
   const monto = Number(digitos || 0);
   const entreCuentas = tipo === "transferencia" || tipo === "pago_tarjeta";
@@ -106,6 +108,8 @@ export function RegistroRapido({
     .slice(0, 8);
   const grupos = categorias.filter((c) => !c.parent_id && c.tipo === tipoCat);
   const destinos = activas.filter((c) => c.id !== cuentaId && (tipo === "pago_tarjeta" ? c.tipo === "credito" : true));
+  const categoriasTransf = categorias.filter((c) => c.parent_id && c.activa && c.tipo === "transferencia");
+  const catTransf = catTransfManual ? categoriaId : categoriaTransferenciaSugerida(tipo, activas.find((c) => c.id === destinoId), categorias);
 
   function elegirCategoria(c: Categoria) {
     setCategoriaId(c.id);
@@ -168,7 +172,7 @@ export function RegistroRapido({
         fecha,
         cuenta_id: cuentaId,
         cuenta_destino_id: entreCuentas ? destinoId : null,
-        categoria_id: entreCuentas ? null : categoriaId,
+        categoria_id: entreCuentas ? catTransf : categoriaId,
         bolsa,
         beneficiario,
         descripcion: descripcion || undefined,
@@ -199,6 +203,7 @@ export function RegistroRapido({
             onClick={() => {
               setTipo(t.valor);
               setCategoriaId(null);
+              setCatTransfManual(false);
               if (t.valor !== "gasto") setBolsa("personal");
             }}
             className={cn(
@@ -316,6 +321,27 @@ export function RegistroRapido({
           {tipo === "pago_tarjeta" && (
             <p className="text-muted-foreground mt-2 text-xs">Pagar la tarjeta no es un gasto nuevo: solo mueve plata entre sus cuentas.</p>
           )}
+        </div>
+      )}
+      {entreCuentas && categoriasTransf.length > 0 && (
+        <div>
+          <p className="text-muted-foreground mb-2 text-xs font-medium">Tipo de transferencia</p>
+          <div className="flex flex-wrap gap-1.5">
+            {categoriasTransf.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => {
+                  setCatTransfManual(true);
+                  setCategoriaId(c.id);
+                }}
+                className={cn("rounded-full px-3 py-1.5 text-xs transition-colors", catTransf === c.id ? "bg-primary text-primary-foreground" : "bg-surface")}
+              >
+                {c.icono} {c.nombre}
+              </button>
+            ))}
+          </div>
+          <p className="text-muted-foreground mt-2 text-xs">No cuenta como gasto ni como ingreso: solo mueve plata entre sus cuentas.</p>
         </div>
       )}
 

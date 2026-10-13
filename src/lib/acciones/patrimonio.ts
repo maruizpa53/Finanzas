@@ -191,23 +191,46 @@ export async function editarCuenta(entrada: {
 // Categorías e ingresos
 // ---------------------------------------------------------------------------
 
-export async function guardarCategoria(entrada: { id: string | null; parent_id: string | null; nombre: string; icono: string; activa: boolean }): Promise<Resultado> {
+export async function guardarCategoria(entrada: {
+  id: string | null;
+  parent_id: string | null;
+  nombre: string;
+  icono: string;
+  activa: boolean;
+  /** Solo para grupos nuevos (sin parent_id). */
+  tipo?: "gasto" | "ingreso" | "transferencia";
+}): Promise<Resultado> {
   const p = z
-    .object({ id: z.string().uuid().nullable(), parent_id: z.string().uuid().nullable(), nombre: z.string().trim().min(1).max(60), icono: z.string().trim().max(8), activa: z.boolean() })
+    .object({
+      id: z.string().uuid().nullable(),
+      parent_id: z.string().uuid().nullable(),
+      nombre: z.string().trim().min(1).max(60),
+      icono: z.string().trim().max(16),
+      activa: z.boolean(),
+      tipo: z.enum(["gasto", "ingreso", "transferencia"]).optional(),
+    })
     .safeParse(entrada);
   if (!p.success) return fallo(p.error.issues[0]);
-  const { id, ...v } = p.data;
+  const { id, tipo: tipoGrupo, ...v } = p.data;
   const supabase = await createClient();
-  let tipo: "gasto" | "ingreso" = "gasto";
+  let tipo: "gasto" | "ingreso" | "transferencia" = tipoGrupo ?? "gasto";
+  let bolsa: "personal" | "lemon" | "freelance" | null = null;
   if (v.parent_id) {
     const { data: g } = await supabase.from("categories").select("tipo, bolsa_default").eq("id", v.parent_id).single();
     tipo = g?.tipo ?? "gasto";
+    bolsa = g?.bolsa_default ?? null;
+  }
+  let orden = 0;
+  if (!id) {
+    const q = supabase.from("categories").select("id", { count: "exact", head: true });
+    const { count } = v.parent_id ? await q.eq("parent_id", v.parent_id) : await q.is("parent_id", null);
+    orden = (count ?? 0) + (v.parent_id ? 1 : 50);
   }
   const { error } = id
     ? await supabase.from("categories").update({ nombre: v.nombre, icono: v.icono || null, activa: v.activa }).eq("id", id)
-    : await supabase.from("categories").insert({ ...v, icono: v.icono || null, tipo });
-  if (error) return fallo(error);
-  return listo(id ? "Categoría actualizada" : "Categoría creada");
+    : await supabase.from("categories").insert({ ...v, icono: v.icono || null, tipo, orden, ...(bolsa ? { bolsa_default: bolsa } : {}) });
+  if (error) return fallo(error.code === "23505" ? { message: "Ya existe una categoría con ese nombre" } : error);
+  return listo(id ? "Categoría actualizada" : v.parent_id ? "Categoría creada" : "Grupo creado");
 }
 
 export async function editarIngreso(entrada: { id: string; monto_esperado: number | null; dia_pago: number | null }): Promise<Resultado> {

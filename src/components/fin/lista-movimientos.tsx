@@ -108,7 +108,7 @@ export function ListaMovimientos({
                           <p className="text-muted-foreground flex items-center gap-1.5 truncate text-xs">
                             <span className="truncate">
                               {entre
-                                ? `${cuenta?.nombre ?? ""} → ${destino?.nombre ?? ""}`
+                                ? `${c ? `${c.nombre} · ` : ""}${cuenta?.nombre ?? ""} → ${destino?.nombre ?? ""}`
                                 : `${c?.nombre ?? "Sin categoría"} · ${cuenta ? nombreCuenta(cuenta) : ""}`}
                             </span>
                             <ChipBolsa bolsa={m.bolsa} />
@@ -191,7 +191,34 @@ function EditorMovimiento({
   const entre = tipo === "transferencia" || tipo === "pago_tarjeta";
   const cambioCategoria = categoriaId !== (mov.categoria_id ?? "") || bolsa !== mov.bolsa;
   const patron = (comercio || descripcion).trim();
-  const grupos = categorias.filter((c) => !c.parent_id);
+  const tipoCat = entre ? "transferencia" : tipo === "ingreso" ? "ingreso" : "gasto";
+  const grupos = categorias.filter((c) => !c.parent_id && c.tipo === tipoCat);
+  const selectorCategoria = (
+    <Campo etiqueta={entre ? "Tipo de transferencia" : "Categoría"}>
+      <select
+        className="border-input h-10 w-full rounded-md border bg-transparent px-3 text-sm"
+        value={categoriaId}
+        onChange={(e) => {
+          setCategoriaId(e.target.value);
+          const c = categorias.find((x) => x.id === e.target.value);
+          if (c?.bolsa_default && !entre) setBolsa(c.bolsa_default);
+        }}
+      >
+        <option value="">{entre ? "Automática según destino" : "Sin categoría"}</option>
+        {grupos.map((g) => (
+          <optgroup key={g.id} label={`${g.icono ?? ""} ${g.nombre}`}>
+            {categorias
+              .filter((c) => c.parent_id === g.id && (c.activa || c.id === categoriaId))
+              .map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.icono} {c.nombre}
+                </option>
+              ))}
+          </optgroup>
+        ))}
+      </select>
+    </Campo>
+  );
 
   function guardar() {
     iniciar(async () => {
@@ -203,7 +230,7 @@ function EditorMovimiento({
           fecha,
           cuenta_id: cuentaId,
           cuenta_destino_id: entre ? destinoId || null : null,
-          categoria_id: entre ? null : categoriaId || null,
+          categoria_id: categoriaId || null,
           bolsa,
           beneficiario: (beneficiario || null) as Beneficiario | null,
           descripcion,
@@ -255,7 +282,16 @@ function EditorMovimiento({
           </Campo>
         </div>
         <Campo etiqueta="Tipo">
-          <select className={sel} value={tipo} onChange={(e) => setTipo(e.target.value as TipoMovimiento)}>
+          <select
+            className={sel}
+            value={tipo}
+            onChange={(e) => {
+              const nuevo = e.target.value as TipoMovimiento;
+              const nuevoTipoCat = nuevo === "transferencia" || nuevo === "pago_tarjeta" ? "transferencia" : nuevo === "ingreso" ? "ingreso" : "gasto";
+              if (categorias.find((c) => c.id === categoriaId)?.tipo !== nuevoTipoCat) setCategoriaId("");
+              setTipo(nuevo);
+            }}
+          >
             <option value="gasto">Gasto</option>
             <option value="ingreso">Ingreso</option>
             <option value="transferencia">Transferencia</option>
@@ -284,32 +320,12 @@ function EditorMovimiento({
                 ))}
             </select>
           </Campo>
+        ) : null}
+        {entre ? (
+          selectorCategoria
         ) : (
           <>
-            <Campo etiqueta="Categoría">
-              <select
-                className={sel}
-                value={categoriaId}
-                onChange={(e) => {
-                  setCategoriaId(e.target.value);
-                  const c = categorias.find((x) => x.id === e.target.value);
-                  if (c?.bolsa_default) setBolsa(c.bolsa_default);
-                }}
-              >
-                <option value="">Sin categoría</option>
-                {grupos.map((g) => (
-                  <optgroup key={g.id} label={`${g.icono ?? ""} ${g.nombre}`}>
-                    {categorias
-                      .filter((c) => c.parent_id === g.id)
-                      .map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.icono} {c.nombre}
-                        </option>
-                      ))}
-                  </optgroup>
-                ))}
-              </select>
-            </Campo>
+            {selectorCategoria}
             <div className="grid grid-cols-2 gap-3">
               <Campo etiqueta="Bolsa">
                 <select className={sel} value={bolsa} onChange={(e) => setBolsa(e.target.value as Bolsa)}>

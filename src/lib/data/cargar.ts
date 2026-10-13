@@ -51,7 +51,7 @@ export async function cargarDatos(meses = 13): Promise<Datos> {
       supabase.from("savings").select("id, nombre, tipo, aporte_mensual, meta_monto, acumulado_inicial, fecha_inicio, fecha_entrega, dia_aporte, organizador, categoria_id, notas"),
       supabase.from("savings_contributions").select("id, saving_id, fecha, monto"),
       todasLasFilas((a, b) => supabase.from("transactions").select(COLS_MOV).eq("bolsa", "lemon").order("fecha", { ascending: false }).order("id").range(a, b)),
-      supabase.from("tags").select("id, nombre, emoji, color, orden, activa").order("orden"),
+      supabase.from("tags").select("id, nombre, grupo, descripcion, emoji, color, orden, activa").order("orden"),
       supabase.from("projects").select("id, nombre, emoji, tag_id, presupuesto, fecha_inicio, fecha_fin, moneda, tasa_cambio, notas, activo").order("created_at"),
     ]);
 

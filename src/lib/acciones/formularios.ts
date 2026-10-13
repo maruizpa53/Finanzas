@@ -55,8 +55,19 @@ export async function formCuenta(id: string, v: Valores): Promise<Resultado> {
   });
 }
 
-export async function formCategoria(id: string | null, parentId: string | null, v: Valores): Promise<Resultado> {
-  return guardarCategoria({ id, parent_id: parentId, nombre: String(v.nombre), icono: String(v.icono ?? ""), activa: v.activa === undefined ? true : Boolean(v.activa) });
+export async function formCategoria(id: string | null, parentId: string | null, v: Valores, tipoGrupo?: "gasto" | "ingreso" | "transferencia"): Promise<Resultado> {
+  return guardarCategoria({
+    id,
+    parent_id: parentId,
+    nombre: String(v.nombre),
+    icono: String(v.icono ?? ""),
+    activa: v.activa === undefined ? true : Boolean(v.activa),
+    tipo: tipoGrupo,
+  });
+}
+
+export async function formGrupoCategoria(tipo: "gasto" | "ingreso" | "transferencia", v: Valores): Promise<Resultado> {
+  return formCategoria(null, null, v, tipo);
 }
 
 export async function formIngreso(id: string, v: Valores): Promise<Resultado> {
@@ -79,6 +90,6 @@ export async function formProyecto(id: string | null, v: Valores): Promise<Resul
 
 export async function formEtiqueta(id: string | null, v: Valores): Promise<Resultado> {
   const { crearEtiqueta, editarEtiqueta } = await import("./etiquetas");
-  const datos = { nombre: String(v.nombre ?? ""), emoji: txt(v.emoji), color: txt(v.color) };
+  const datos = { nombre: String(v.nombre ?? ""), emoji: txt(v.emoji), color: txt(v.color), grupo: txt(v.grupo) ?? "Otras" };
   return id ? editarEtiqueta(id, { ...datos, activa: v.activa === undefined ? true : Boolean(v.activa) }) : crearEtiqueta(datos);
 }

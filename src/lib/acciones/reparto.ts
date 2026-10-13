@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { calcularReparto, type LineaReparto } from "@/lib/finance/reparto";
+import { nombreCategoriaTransferencia } from "@/lib/finance/transferencias";
 import type { Resultado } from "./movimientos";
 import type { TablesInsert } from "@/lib/supabase/database.types";
 
@@ -78,16 +79,23 @@ export async function crearIngresoRepartido(entrada: EntradaIngresoRepartido): P
 
   // Datos de destino en una sola consulta por tipo.
   const ids = (d: string) => r.lineas.filter((l) => l.destino === d && l.monto > 0).map((l) => l.id!);
-  const [{ data: deudas }, { data: ahorros }, { data: catPrestamo }] = await Promise.all([
+  const [{ data: deudas }, { data: ahorros }, { data: catPrestamo }, { data: catsTransf }, { data: cuentasDestino }] = await Promise.all([
     ids("deuda").length ? supabase.from("debts").select("id, acreedor, categoria_id, solo_intereses, interes_mensual").in("id", ids("deuda")) : Promise.resolve({ data: [] as never[] }),
     ids("ahorro").length ? supabase.from("savings").select("id, nombre, categoria_id").in("id", ids("ahorro")) : Promise.resolve({ data: [] as never[] }),
     supabase.from("categories").select("id").eq("nombre", "Préstamos que hice").not("parent_id", "is", null).maybeSingle(),
+    supabase.from("categories").select("id, nombre").eq("tipo", "transferencia").not("parent_id", "is", null),
+    ids("cuenta").length ? supabase.from("accounts").select("id, tipo, nombre").in("id", ids("cuenta")) : Promise.resolve({ data: [] as never[] }),
   ]);
+  const catTransf = (destinoId: string | null) => {
+    const destino = (cuentasDestino ?? []).find((c) => c.id === destinoId);
+    const nombre = nombreCategoriaTransferencia("transferencia", destino);
+    return (catsTransf ?? []).find((c) => c.nombre === nombre)?.id ?? null;
+  };
 
   for (const l of r.lineas) {
     if (!l.monto) continue;
     if (l.destino === "cuenta") {
-      const { error } = await supabase.from("transactions").insert({ ...base, tipo: "transferencia", monto: l.monto, cuenta_destino_id: l.id, descripcion: "Reparto de ingreso" });
+      const { error } = await supabase.from("transactions").insert({ ...base, tipo: "transferencia", monto: l.monto, cuenta_destino_id: l.id, categoria_id: catTransf(l.id), descripcion: "Reparto de ingreso" });
       if (error) fallos.push(error.message);
     } else if (l.destino === "deuda") {
       const d = (deudas ?? []).find((x) => x.id === l.id);

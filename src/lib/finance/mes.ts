@@ -76,8 +76,9 @@ export type ClaseFijo = "fijos" | "ahorro" | "deudas";
 export function claseDeRecurrente(r: Recurrente, categorias: Categoria[]): ClaseFijo {
   const { porId, grupoDe } = indexarCategorias(categorias);
   const cat = r.categoria_id ? porId.get(r.categoria_id) : undefined;
-  if (cat?.nombre.toLowerCase().startsWith("cadena")) return "ahorro";
-  if (grupoDe(r.categoria_id)?.nombre === "Deudas y ahorro") return "deudas";
+  const grupo = grupoDe(r.categoria_id)?.nombre;
+  if (cat?.nombre.toLowerCase().startsWith("cadena") || grupo === "Ahorro e inversión") return "ahorro";
+  if (grupo === "Deudas" || grupo === "Deudas y ahorro") return "deudas";
   return "fijos";
 }
 

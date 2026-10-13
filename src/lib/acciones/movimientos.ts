@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { nombreCategoriaTransferencia } from "@/lib/finance/transferencias";
 
 export type Resultado = { ok: true; id?: string; mensaje?: string } | { ok: false; error: string };
 
@@ -40,6 +41,14 @@ function revalidarTodo() {
 }
 
 type Cliente = Awaited<ReturnType<typeof createClient>>;
+
+/** Categoría de transferencia según el destino (Pago de tarjeta, Retiro de efectivo…). */
+async function categoriaTransferencia(supabase: Cliente, tipo: (typeof TIPOS)[number], destinoId: string | null | undefined) {
+  const { data: destino } = destinoId ? await supabase.from("accounts").select("tipo, nombre").eq("id", destinoId).maybeSingle() : { data: null };
+  const nombre = nombreCategoriaTransferencia(tipo, destino ?? undefined);
+  const { data } = await supabase.from("categories").select("id").eq("tipo", "transferencia").eq("nombre", nombre).not("parent_id", "is", null).maybeSingle();
+  return data?.id ?? null;
+}
 
 /** Reemplaza las etiquetas de un movimiento. */
 async function ponerEtiquetas(supabase: Cliente, transactionId: string, etiquetas: string[] | undefined, reemplazar: boolean) {
@@ -92,6 +101,7 @@ export async function crearMovimiento(entrada: EntradaMovimiento): Promise<Resul
     }
   }
   if (!descripcion) descripcion = v.tipo === "pago_tarjeta" ? "Pago de tarjeta" : v.tipo === "transferencia" ? "Transferencia" : "Movimiento";
+  const categoria = esMovEntreCuentas ? (v.categoria_id ?? (await categoriaTransferencia(supabase, v.tipo, v.cuenta_destino_id))) : (v.categoria_id ?? null);
 
   const { data, error } = await supabase
     .from("transactions")
@@ -101,7 +111,7 @@ export async function crearMovimiento(entrada: EntradaMovimiento): Promise<Resul
       fecha: v.fecha,
       cuenta_id: v.cuenta_id,
       cuenta_destino_id: esMovEntreCuentas ? v.cuenta_destino_id : null,
-      categoria_id: esMovEntreCuentas ? null : (v.categoria_id ?? null),
+      categoria_id: categoria,
       bolsa: esMovEntreCuentas ? "personal" : v.bolsa,
       beneficiario: esMovEntreCuentas ? null : (v.beneficiario ?? null),
       descripcion,
@@ -149,6 +159,7 @@ export async function actualizarMovimiento(
   const v = p.data;
   const supabase = await createClient();
   const esMovEntreCuentas = v.tipo === "transferencia" || v.tipo === "pago_tarjeta";
+  const categoria = esMovEntreCuentas ? (v.categoria_id ?? (await categoriaTransferencia(supabase, v.tipo, v.cuenta_destino_id))) : (v.categoria_id ?? null);
 
   const { error } = await supabase
     .from("transactions")
@@ -158,7 +169,7 @@ export async function actualizarMovimiento(
       fecha: v.fecha,
       cuenta_id: v.cuenta_id,
       cuenta_destino_id: esMovEntreCuentas ? v.cuenta_destino_id : null,
-      categoria_id: esMovEntreCuentas ? null : (v.categoria_id ?? null),
+      categoria_id: categoria,
       bolsa: esMovEntreCuentas ? "personal" : v.bolsa,
       beneficiario: esMovEntreCuentas ? null : (v.beneficiario ?? null),
       descripcion: v.descripcion || "Movimiento",

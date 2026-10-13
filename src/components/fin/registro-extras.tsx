@@ -1,40 +1,59 @@
 "use client";
 
-import { Plus, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { ChevronDown, Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatCOP } from "@/lib/format";
 import { calcularReparto, type DestinoReparto, type LineaReparto } from "@/lib/finance/reparto";
 import type { Ahorro, Cuenta, Deuda, Etiqueta, Proyecto } from "@/lib/finance/modelo";
-import { nombreCuenta } from "@/lib/finance/etiquetas";
+import { agruparEtiquetas, nombreCuenta } from "@/lib/finance/etiquetas";
 
-/** Chips de etiquetas "para quién / para qué" (varias a la vez, estilo Monarch). */
+/** Grupos que se ven siempre al registrar; el resto queda en "Más etiquetas". */
+const GRUPOS_PRINCIPALES = ["Para quién", "Actividad"];
+
+/** Chips de etiquetas agrupadas (varias a la vez, estilo Monarch). */
 export function SelectorEtiquetas({ etiquetas, valor, onChange }: { etiquetas: Etiqueta[]; valor: string[]; onChange: (v: string[]) => void }) {
+  const [verMas, setVerMas] = useState(false);
   if (!etiquetas.length) return null;
   const alternar = (id: string) => onChange(valor.includes(id) ? valor.filter((x) => x !== id) : [...valor, id]);
+  const grupos = agruparEtiquetas(etiquetas);
+  const visibles = grupos.filter(([g, es]) => verMas || GRUPOS_PRINCIPALES.includes(g) || es.some((e) => valor.includes(e.id)));
+  const ocultas = grupos.length - visibles.length;
   return (
-    <div>
-      <p className="text-muted-foreground mb-2 text-xs font-medium">Etiquetas</p>
-      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
-        {etiquetas.map((e) => {
-          const on = valor.includes(e.id);
-          return (
-            <button
-              key={e.id}
-              type="button"
-              aria-pressed={on}
-              onClick={() => alternar(e.id)}
-              style={on && e.color ? { backgroundColor: e.color, borderColor: e.color } : undefined}
-              className={cn(
-                "flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm whitespace-nowrap transition-all active:scale-95",
-                on ? "text-white shadow-sm" : "bg-card",
-              )}
-            >
-              <span>{e.emoji}</span>
-              {e.nombre}
-            </button>
-          );
-        })}
-      </div>
+    <div className="grid gap-3">
+      {visibles.map(([grupo, es]) => (
+        <div key={grupo}>
+          <p className="text-muted-foreground mb-1.5 text-xs font-medium">{grupo}</p>
+          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
+            {es.map((e) => {
+              const on = valor.includes(e.id);
+              return (
+                <button
+                  key={e.id}
+                  type="button"
+                  aria-pressed={on}
+                  title={e.descripcion ?? undefined}
+                  onClick={() => alternar(e.id)}
+                  style={on && e.color ? { backgroundColor: e.color, borderColor: e.color } : undefined}
+                  className={cn(
+                    "flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm whitespace-nowrap transition-all active:scale-95",
+                    on ? "text-white shadow-sm" : "bg-card",
+                  )}
+                >
+                  <span>{e.emoji}</span>
+                  {e.nombre}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+      {(ocultas > 0 || verMas) && (
+        <button type="button" onClick={() => setVerMas((v) => !v)} className="text-primary flex items-center gap-1 justify-self-start text-xs font-medium">
+          {verMas ? "Menos etiquetas" : `Más etiquetas (${grupos.filter(([g]) => !GRUPOS_PRINCIPALES.includes(g)).map(([g]) => g.toLowerCase()).join(", ")})`}
+          <ChevronDown className={cn("size-3.5 transition-transform", verMas && "rotate-180")} />
+        </button>
+      )}
     </div>
   );
 }

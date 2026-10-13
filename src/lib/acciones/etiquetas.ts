@@ -14,7 +14,8 @@ const listo = (mensaje: string, id?: string): Resultado => {
 const esquemaEtiqueta = z.object({
   nombre: z.string().trim().min(1, "Escriba el nombre").max(40),
   emoji: z.string().trim().max(16).nullable().optional(),
-  color: z.string().regex(/^#[0-9a-fA-F]{6}$/).nullable().optional(),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Color inválido (ej. #6366F1)").nullable().optional(),
+  grupo: z.string().trim().min(1).max(40).optional(),
 });
 
 export async function crearEtiqueta(entrada: z.input<typeof esquemaEtiqueta>): Promise<Resultado> {
@@ -24,7 +25,7 @@ export async function crearEtiqueta(entrada: z.input<typeof esquemaEtiqueta>): P
   const { count } = await supabase.from("tags").select("id", { count: "exact", head: true });
   const { data, error } = await supabase
     .from("tags")
-    .insert({ nombre: p.data.nombre, emoji: p.data.emoji || null, color: p.data.color ?? "#64748B", orden: (count ?? 0) + 1 })
+    .insert({ nombre: p.data.nombre, emoji: p.data.emoji || null, color: p.data.color ?? "#64748B", orden: (count ?? 0) + 100, grupo: p.data.grupo ?? "Otras" })
     .select("id")
     .single();
   if (error) return { ok: false, error: error.code === "23505" ? "Ya existe una etiqueta con ese nombre" : error.message };
@@ -35,7 +36,7 @@ export async function editarEtiqueta(id: string, entrada: z.input<typeof esquema
   const p = esquemaEtiqueta.extend({ activa: z.boolean().optional() }).safeParse(entrada);
   if (!p.success || !z.string().uuid().safeParse(id).success) return { ok: false, error: "Datos inválidos" };
   const supabase = await createClient();
-  const { error } = await supabase.from("tags").update({ nombre: p.data.nombre, emoji: p.data.emoji || null, color: p.data.color ?? undefined, activa: p.data.activa }).eq("id", id);
+  const { error } = await supabase.from("tags").update({ nombre: p.data.nombre, emoji: p.data.emoji || null, color: p.data.color ?? undefined, activa: p.data.activa, grupo: p.data.grupo }).eq("id", id);
   if (error) return { ok: false, error: error.message };
   return listo("Etiqueta actualizada");
 }
@@ -66,7 +67,7 @@ export async function guardarProyecto(id: string | null, entrada: EntradaProyect
     return listo("Proyecto actualizado", id);
   }
   // Cada proyecto nuevo tiene su propia etiqueta para marcar gastos.
-  const { data: tag, error: e1 } = await supabase.from("tags").insert({ nombre: v.nombre, emoji: v.emoji || "📁", color: "#8B5CF6", orden: 99 }).select("id").single();
+  const { data: tag, error: e1 } = await supabase.from("tags").insert({ nombre: v.nombre, emoji: v.emoji || "📁", color: "#8B5CF6", orden: 99, grupo: "Viajes y proyectos" }).select("id").single();
   if (e1) return { ok: false, error: e1.code === "23505" ? "Ya existe una etiqueta con ese nombre" : e1.message };
   const { data, error } = await supabase.from("projects").insert({ ...v, emoji: v.emoji || null, tag_id: tag.id }).select("id").single();
   if (error) return { ok: false, error: error.message };

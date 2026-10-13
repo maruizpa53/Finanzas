@@ -5,14 +5,13 @@ import { Encabezado } from "@/components/app/encabezado";
 import { Monto } from "@/components/app/monto";
 import { HojaFormulario } from "@/components/fin/hoja-formulario";
 import { Tarjeta, TituloTarjeta } from "@/components/fin/piezas";
-import { formCategoria, formIngreso } from "@/lib/acciones/formularios";
+import { formCategoria, formGrupoCategoria, formIngreso } from "@/lib/acciones/formularios";
 import { SincronizarCalendario } from "@/components/fin/sincronizar-calendario";
 import { EtiquetasAjustes } from "@/components/fin/etiquetas-ajustes";
 import { cn } from "@/lib/utils";
 import type { Datos } from "@/lib/finance/modelo";
 
 export function VistaAjustes({ datos, calendarioToken = null }: { datos: Datos; calendarioToken?: string | null }) {
-  const grupos = datos.categorias.filter((c) => !c.parent_id);
   return (
     <>
       <Encabezado titulo="Ajustes" />
@@ -82,56 +81,100 @@ export function VistaAjustes({ datos, calendarioToken = null }: { datos: Datos; 
           <TituloTarjeta ayuda="Un gasto puede tener varias etiquetas además de su categoría">Etiquetas</TituloTarjeta>
           <EtiquetasAjustes etiquetas={datos.etiquetas} />
         </Tarjeta>
-        <Tarjeta>
-          <TituloTarjeta ayuda="Toque una categoría para cambiar su emoji o nombre">Categorías</TituloTarjeta>
-          <div className="grid gap-5 sm:grid-cols-2">
-            {grupos.map((g) => (
-              <div key={g.id}>
-                <div className="mb-2 flex items-center justify-between">
-                  <p className="text-sm font-semibold">
-                    {g.icono} {g.nombre}
-                  </p>
-                  <HojaFormulario
-                    titulo={`Nueva categoría en ${g.nombre}`}
-                    disparador={
-                      <Button variant="ghost" size="icon" aria-label={`Agregar a ${g.nombre}`}>
-                        <Plus />
-                      </Button>
-                    }
-                    accion={formCategoria.bind(null, null, g.id)}
-                    campos={[
-                      { nombre: "icono", etiqueta: "Emoji", tipo: "emoji", inicial: "📌" },
-                      { nombre: "nombre", etiqueta: "Nombre", tipo: "texto" },
-                    ]}
-                  />
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {datos.categorias
-                    .filter((c) => c.parent_id === g.id)
-                    .map((c) => (
-                      <HojaFormulario
-                        key={c.id}
-                        titulo="Editar categoría"
-                        disparador={
-                          <button className={cn("bg-surface hover:bg-accent rounded-full px-3 py-1.5 text-xs", !c.activa && "line-through opacity-50")}>
-                            {c.icono} {c.nombre}
-                          </button>
-                        }
-                        accion={formCategoria.bind(null, c.id, g.id)}
-                        campos={[
-                          { nombre: "icono", etiqueta: "Emoji", tipo: "emoji", inicial: c.icono },
-                          { nombre: "nombre", etiqueta: "Nombre", tipo: "texto", inicial: c.nombre },
-                          { nombre: "activa", etiqueta: "Activa (aparece al registrar)", tipo: "check", inicial: c.activa },
-                        ]}
-                      />
-                    ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </Tarjeta>
+        <SeccionCategorias datos={datos} />
         </div>
       </div>
+    </>
+  );
+}
+
+const SECCIONES = [
+  { tipo: "gasto", titulo: "Categorías de gastos", ayuda: "Qué compró. Un gasto tiene una sola categoría." },
+  { tipo: "ingreso", titulo: "Categorías de ingresos", ayuda: "De dónde entró la plata." },
+  { tipo: "transferencia", titulo: "Tipos de transferencia", ayuda: "Movimientos entre sus cuentas: no son gasto ni ingreso." },
+] as const;
+
+function SeccionCategorias({ datos }: { datos: Datos }) {
+  return (
+    <>
+      {SECCIONES.map((sec) => {
+        const grupos = datos.categorias.filter((c) => !c.parent_id && c.tipo === sec.tipo);
+        return (
+          <Tarjeta key={sec.tipo}>
+            <TituloTarjeta ayuda={`${sec.ayuda} Toque una para cambiar su emoji o nombre.`}>{sec.titulo}</TituloTarjeta>
+            <div className="grid gap-5 sm:grid-cols-2">
+              {grupos.map((g) => (
+                <div key={g.id}>
+                  <div className="mb-2 flex items-center justify-between">
+                    <HojaFormulario
+                      titulo="Editar grupo"
+                      disparador={
+                        <button className={cn("text-left text-sm font-semibold hover:underline", !g.activa && "line-through opacity-50")}>
+                          {g.icono} {g.nombre}
+                        </button>
+                      }
+                      accion={formCategoria.bind(null, g.id, null)}
+                      campos={[
+                        { nombre: "icono", etiqueta: "Emoji", tipo: "emoji", inicial: g.icono },
+                        { nombre: "nombre", etiqueta: "Nombre", tipo: "texto", inicial: g.nombre },
+                        { nombre: "activa", etiqueta: "Activo", tipo: "check", inicial: g.activa },
+                      ]}
+                    />
+                    <HojaFormulario
+                      titulo={`Nueva categoría en ${g.nombre}`}
+                      disparador={
+                        <Button variant="ghost" size="icon" aria-label={`Agregar a ${g.nombre}`}>
+                          <Plus />
+                        </Button>
+                      }
+                      accion={formCategoria.bind(null, null, g.id)}
+                      campos={[
+                        { nombre: "icono", etiqueta: "Emoji", tipo: "emoji", inicial: "📌" },
+                        { nombre: "nombre", etiqueta: "Nombre", tipo: "texto" },
+                      ]}
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {datos.categorias
+                      .filter((c) => c.parent_id === g.id)
+                      .map((c) => (
+                        <HojaFormulario
+                          key={c.id}
+                          titulo="Editar categoría"
+                          disparador={
+                            <button className={cn("bg-surface hover:bg-accent rounded-full px-3 py-1.5 text-xs", !c.activa && "line-through opacity-50")}>
+                              {c.icono} {c.nombre}
+                            </button>
+                          }
+                          accion={formCategoria.bind(null, c.id, g.id)}
+                          campos={[
+                            { nombre: "icono", etiqueta: "Emoji", tipo: "emoji", inicial: c.icono },
+                            { nombre: "nombre", etiqueta: "Nombre", tipo: "texto", inicial: c.nombre },
+                            { nombre: "activa", etiqueta: "Activa (aparece al registrar)", tipo: "check", inicial: c.activa },
+                          ]}
+                        />
+                      ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <HojaFormulario
+              titulo="Nuevo grupo"
+              descripcion="Un grupo reúne varias categorías (ej. Vivienda → Cuota, Mantenimiento…)."
+              disparador={
+                <Button variant="outline" size="sm" className="mt-4 rounded-full">
+                  <Plus className="size-3.5" /> Nuevo grupo
+                </Button>
+              }
+              accion={formGrupoCategoria.bind(null, sec.tipo)}
+              campos={[
+                { nombre: "icono", etiqueta: "Emoji", tipo: "emoji", inicial: "📁" },
+                { nombre: "nombre", etiqueta: "Nombre", tipo: "texto" },
+              ]}
+            />
+          </Tarjeta>
+        );
+      })}
     </>
   );
 }

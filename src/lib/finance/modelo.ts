@@ -65,6 +65,9 @@ export interface Movimiento {
 export interface Etiqueta {
   id: string;
   nombre: string;
+  /** Grupo de la etiqueta: "Para quién", "Actividad", "Tipo de gasto"… */
+  grupo: string;
+  descripcion: string | null;
   emoji: string | null;
   color: string | null;
   orden: number;
